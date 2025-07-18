@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNES / Famicom Games</title>
+  <style>
+    #groupTotals {white-space: pre-wrap;}
+    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
+    #groupFilter {margin: 2rem 1rem;}
+    .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
+    .card {text-align: center; cursor: pointer;}
+    .card img {width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease;}
+    .card.missing img, .party img {filter: grayscale(100%) brightness(0.3) !important;}
+    .card.purchased img {filter: none !important;}
+    .card .title {margin-top: 0.3rem; font-size: 0.9rem;}
+    .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-height: 90vh; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; overflow-y: auto;}
+    .modal.active {visibility: visible; opacity: 1;}
+    .modal img {max-height: 40vh; object-fit: contain;}
+    .modal .details {margin-top: 1rem; color: #ccc; text-align: center;}
+    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: white; cursor: pointer;}
+    #totals {font-weight:bold; margin-bottom:1rem;}
+    #containThis {display:flex;}
+    #leftContain, #rightContain {width:50%;}
+    .card.force-visible img {filter: none !important;}
+    .card.force-invisible img {filter: grayscale(100%) brightness(0.3) !important;}
+    .card img { width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease; filter: none; /* fallback base */}
+    .card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}
+</style>
+</head>
+<body>
+    <div id="containThis">
+        <div id="leftContain">
+          <h1>SNES Items</h1>
+          <div style="margin-top: 0.5rem;">
+            <select id="viewMode" style="padding: 0.3rem; font-size: 1rem;">
+              <option value="all">Show All</option>
+              <option value="missing">Show Missing Only</option>
+            </select>
+            <h2 id="missingModeWarning" style="color: red; display: none;">MISSING MODE ACTIVE</h2>
+          </div>      
+        </div>
+        <div id="rightContain">
+          <div id="totalPrice" style="margin-top: 1rem; font-weight: bold;"></div>
+          <div id="groupTotals"></div>
+          </div>
+      </div>
+      <div id="groupFilter" style="margin-bottom: 1rem 0;"></div>
+      <div class="grid" id="collectionGrid"></div>
+      <div class="modal" id="imageModal">
+        <span class="close" id="closeModal">&times;</span>
+        <img id="modalImage" src="" alt="Controller" />
+        <div class="details">
+          <div><strong>Owned:</strong> <span id="ownedCount">0 / 1</span></div>
+          <hr style="width: 80%; border: 0; border-top: 1px solid #555;">
+          <div><strong>Price:</strong> <span id="price1">N/A</span></div>
+          <div><strong>Date:</strong> <span id="date1">N/A</span></div>
+          <div><strong>Location:</strong> <span id="location1">N/A</span></div>
+          <br />
+        </div>
+      </div>
+
+<script>
+const data = [
+{
+        title: "Donkey Kong Country",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry_cartridge.jpg"
+      },
+{
+        title: "Donkey Kong Country 2",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry2_cartridge.jpg"
+      },
+{
+        title: "Donkey Kong Country 3",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry3_cartridge.jpg"
+      },
+{
+        title: "Doom",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/doom_cartridge.jpg"
+      },
+{
+        title: "Earthworm Jim",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/earthwormjim_cartridge.jpg"
+      },
+{
+        title: "Lemmings",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lemmings_cartridge.jpg"
+      },
+{
+        title: "Lemmings 2",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lemmings2_cartridge.jpg"
+      },
+{
+        title: "The Lost Vikings",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lostvikings_cartridge.jpg"
+      },
+{
+        title: "Mario Paint",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mariopaint_cartridge.jpg"
+      },
+{
+        title: "Mortal Kombat",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mortalkombat_cartridge.jpg"
+      },
+{
+        title: "Mortal Kombat 2",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mortalkombat2_cartridge.jpg"
+      },
+{
+        title: "NBA Jam",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/nbajam_cartridge.jpg"
+      },
+{
+        title: "Street Fighter II",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighter2_cartridge.jpg"
+      },
+{
+        title: "Street Fighter II Turbo",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighter2turbo_cartridge.jpg"
+      },
+{
+        title: "Street Fighter Alpha 2",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighteralpha2_cartridge.jpg"
+      },
+{
+        title: "Super Street Fighter II",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/superstreetfighter2_cartridge.jpg"
+      },
+{
+        title: "Super Mario Allstars",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioallstars_cartridge.jpg"
+      },
+{
+        title: "Super Mario Kart",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermariokart_cartridge.jpg"
+      },
+{
+        title: "Super Mario RPG",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermariorpg_cartridge.jpg"
+      },
+{
+        title: "Super Mario World",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioworld_cartridge.jpg"
+      },
+{
+        title: "Super Mario World 2",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioworld2_cartridge.jpg"
+      },
+{
+        title: "True Lies",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/truelies_cartridge.jpg"
+      },
+{
+        title: "Wolfenstein 3D",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/wolfenstein_cartridge.jpg"
+      },
+{
+        title: "Zelda: Link to the Past",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/zelda_cartridge.jpg"
+      },
+{
+        title: "Donkey Kong Country",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry.jpg"
+      },
+{
+        title: "Donkey Kong Country 2",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry2.jpg"
+      },
+{
+        title: "Donkey Kong Country 3",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/donkeykongcountry3.jpg"
+      },
+{
+        title: "Doom",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/doom.jpg"
+      },
+{
+        title: "Earthworm Jim",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/earthwormjim.png"
+      },
+{
+        title: "Lemmings",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lemmings.jpg"
+      },
+{
+        title: "Lemmings 2",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lemmings2.png"
+      },
+{
+        title: "The Lost Vikings",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/lostvikings.jpg"
+      },
+{
+        title: "Mario Paint",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mariopaint.jpg"
+      },
+{
+        title: "Mortal Kombat",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mortalkombat.jpg"
+      },
+{
+        title: "Mortal Kombat 2",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mortalkombat2.jpg"
+      },
+{
+        title: "NBA Jam",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/nbajam.jpg"
+      },
+{
+        title: "Street Fighter II",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighter2.jpg"
+      },
+{
+        title: "Street Fighter II Turbo",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighter2turbo.jpg"
+      },
+{
+        title: "Street Fighter Alpha 2",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/streetfighteralpha2.jpg"
+      },
+{
+        title: "Super Street Fighter II",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/superstreetfighter2.jpg"
+      },
+{
+        title: "Super Mario Allstars",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioallstars.png"
+      },
+{
+        title: "Super Mario Kart",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermariokart.jpg"
+      },
+{
+        title: "Super Mario RPG",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermariorpg.png"
+      },
+{
+        title: "Super Mario World",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioworld.jpg"
+      },
+{
+        title: "Super Mario World 2",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/supermarioworld2.jpg"
+      },
+{
+        title: "True Lies",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/truelies.jpg"
+      },
+{
+        title: "Wolfenstein 3D",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/wolfenstein.jpg"
+      },
+{
+        title: "Zelda: Link to the Past",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/zelda.jpg"
+      }
+];
+
+function createGrid() {
+  const grid = document.getElementById("collectionGrid");
+  grid.innerHTML = "";
+  let lastGroup = null;
+
+  data.forEach((item, index) => {
+    if (lastGroup && lastGroup !== item.group) {
+      const hr = document.createElement("hr");
+      hr.style.gridColumn = "1 / -1";
+      hr.style.border = "0";
+      hr.style.borderTop = "2px dashed #444";
+      hr.style.margin = "2rem 0";
+      grid.appendChild(hr);
+    }
+    lastGroup = item.group;
+
+    const card = document.createElement("div");
+card.classList.add("card");
+card.dataset.index = index;
+
+// Ensure fresh class state
+if (item.purchased) {
+  card.classList.add("purchased");
+} else {
+  card.classList.add("missing");
+}
+
+
+    const img = document.createElement("img");
+    img.src = item.image || "docs/assets/img/snes/placeholders/locked.jpg";
+    img.alt = item.title;
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = item.title;
+
+    card.appendChild(img);
+    card.appendChild(title);
+    grid.appendChild(card);
+
+    card.addEventListener("click", () => openModal(index));
+  });
+  populateGroupFilter();
+  highlightActiveLink("All");
+  updateGroupTotals();
+}
+
+function updateGroupTotals() {
+  const groups = {};
+  let totalCost = 0;
+  let totalOwned = 0;
+  let totalItems = 0;
+
+  data.forEach(d => {
+    const group = d.group || "Other";
+    const owned = d.purchased ? 1 : 0;
+
+    if (!groups[group]) groups[group] = { total: 0, owned: 0, cost: 0 };
+    groups[group].total++;
+    groups[group].owned += owned;
+    totalItems++;
+    totalOwned += owned;
+
+    const priceStr = (d.price || "").replace(/[\u00a5,]/g, '').trim();
+    const price = parseFloat(priceStr);
+    if (!isNaN(price)) {
+      groups[group].cost += price;
+      totalCost += price;
+    }
+  });
+
+  function formatYen(value) {
+    return '\u00a5' + value.toLocaleString('en-US');
+  }
+
+  let table = `<table style="border-collapse: collapse; width: 75%; margin-top: 1rem; font-size:0.9rem;">`;
+  Object.entries(groups).forEach(([group, g]) => {
+    const pct = ((g.owned / g.total) * 100).toFixed(1);
+    table += `
+      <tr>
+        <td>${group}</td>
+        <td style="text-align: right;">${g.owned} / ${g.total} (${pct}%)</td>
+        <td style="text-align: right;">${formatYen(g.cost)}</td>
+      </tr>`;
+  });
+
+  const overallPct = ((totalOwned / totalItems) * 100).toFixed(1);
+  table += `
+    <tr><td colspan="3"><hr style="border: 0; border-top: 1px solid #888; margin: 0.5rem 0;"></td></tr>
+    <tr>
+      <td style="font-weight: bold;">Total</td>
+      <td style="text-align: right; font-weight: bold;">${totalOwned} / ${totalItems} (${overallPct}%)</td>
+      <td style="text-align: right; font-weight: bold;">${formatYen(totalCost)}</td>
+    </tr>`;
+  table += `</table>`;
+
+  document.getElementById("groupTotals").innerHTML = table;
+  document.getElementById("totalPrice").textContent = "";
+}
+
+function populateGroupFilter() {
+  const container = document.getElementById("groupFilter");
+  const groups = Array.from(new Set(data.map(item => item.group || "Other"))).sort();
+  const allGroups = ["All", ...groups];
+
+  allGroups.forEach(group => {
+    const link = document.createElement("a");
+    link.href = "#";
+    link.textContent = group;
+    link.dataset.group = group;
+    link.style.marginRight = "1rem";
+    link.style.color = "#66ccff";
+    link.style.textDecoration = "underline";
+    link.style.cursor = "pointer";
+
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      filterByGroup(group);
+      highlightActiveLink(group);
+    });
+
+    container.appendChild(link);
+  });
+}
+
+function filterByGroup(group) {
+  const cards = document.querySelectorAll(".card");
+  cards.forEach(card => {
+    const index = card.dataset.index;
+    const itemGroup = data[index].group || "Other";
+    card.style.display = (group === "All" || itemGroup === group) ? "" : "none";
+  });
+}
+
+function highlightActiveLink(activeGroup) {
+  document.querySelectorAll("#groupFilter a").forEach(link => {
+    if (link.dataset.group === activeGroup) {
+      link.style.fontWeight = "bold";
+      link.style.textDecoration = "none";
+    } else {
+      link.style.fontWeight = "normal";
+      link.style.textDecoration = "underline";
+    }
+  });
+}
+
+document.getElementById("viewMode").addEventListener("change", function () {
+  const mode = this.value;
+  const warning = document.getElementById("missingModeWarning");
+  const body = document.body;
+
+  document.querySelectorAll(".card").forEach(card => {
+    const index = card.dataset.index;
+    const isPurchased = data[index].purchased === true;
+
+    // 🔥 Re-evaluate .missing status every time
+    if (isPurchased) {
+      card.classList.remove("missing");
+    } else {
+      card.classList.add("missing");
+    }
+
+    card.classList.remove("force-visible");
+
+    if (mode === "missing") {
+      if (!isPurchased) {
+        card.style.display = "";
+        card.classList.add("force-visible");
+      } else {
+        card.style.display = "none";
+      }
+      warning.style.display = "block";
+      body.style.background = "#222a40";
+    } else {
+      card.style.display = "";
+      warning.style.display = "none";
+      body.style.background = "#121212";
+    }
+    
+  });
+
+  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
+  filterByGroup(activeGroup);
+});
+
+function openModal(index) {
+  const item = data[index];
+  document.getElementById("modalImage").src = item.image || "";
+  document.getElementById("ownedCount").textContent = item.purchased ? "1 / 1" : "0 / 1";
+  document.getElementById("price1").textContent = item.price || "N/A";
+  document.getElementById("date1").textContent = item.date || "N/A";
+  document.getElementById("location1").textContent = item.location || "N/A";
+  document.getElementById("imageModal").classList.add("active");
+}
+
+document.getElementById("closeModal").addEventListener("click", () => document.getElementById("imageModal").classList.remove("active"));
+window.addEventListener("click", e => {
+  if (e.target === document.getElementById("imageModal")) {
+    document.getElementById("imageModal").classList.remove("active");
+  }
+});
+
+createGrid();
+
+document.getElementById("viewMode").addEventListener("change", function () {
+  const mode = this.value;
+  const warning = document.getElementById("missingModeWarning");
+  const body = document.body;
+
+  document.querySelectorAll(".card").forEach(card => {
+    const index = card.dataset.index;
+    const isPurchased = data[index].purchased === true;
+
+    card.classList.remove("party", "missing", "purchased", "force-visible");
+
+    if (isPurchased) {
+      card.classList.add("purchased");
+    } else {
+      card.classList.add("missing");
+    }
+
+    if (mode === "missing") {
+      if (!isPurchased) {
+        card.style.display = "";
+        card.classList.add("force-visible");
+      } else {
+        card.style.display = "none";
+        card.classList.add("party"); // ✅ this line applies your desired class
+      }
+      warning.style.display = "block";
+      body.style.background = "#222a40";
+    } else {
+      card.style.display = "";
+      warning.style.display = "none";
+      body.style.background = "#121212";
+    }
+  });
+
+  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
+  filterByGroup(activeGroup);
+});
+
+</script>
+</body>
+</html>

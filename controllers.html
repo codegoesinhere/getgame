@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controller Collection</title>
+  <style>
+    #groupTotals {white-space: pre-wrap;}
+    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
+    #groupFilter {margin: 1rem;}
+    .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
+    .card {text-align: center; cursor: pointer;}
+    .card img {width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease;}
+    .card.missing img {filter: grayscale(100%) brightness(0.3);}
+    .card .title {margin-top: 0.3rem; font-size: 0.9rem;}
+    .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-height: 90vh; background: rgba(0, 0, 0, 0.85);  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; overflow-y: auto;}
+    .modal.active {visibility: visible; opacity: 1;}
+    .modal img {max-height: 40vh; object-fit: contain;}
+    .modal .details {margin-top: 1rem; color: #ccc; text-align: center;    }
+    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: white; cursor: pointer;}
+    .group-totals-table {width: 30%; border-collapse: collapse; margin-bottom: 1rem; font-size:0.9em;}
+    .group-totals-table td:nth-child(2), .group-totals-table td:nth-child(3) {text-align: right;}
+    .group-divider {border-top: 1px solid #555;}
+    .group-totals-table {width: 100%; border-collapse: collapse; margin-bottom: 1rem;}
+    .group-totals-table td:nth-child(2), .group-totals-table td:nth-child(3) {text-align: right;}
+    #collectionGrid {display: flex; flex-direction: column; gap: 2rem;}
+    #containThis {display:flex;}
+    #leftContain, #rightContain {width:50%;}
+    body.missing-mode {background-color: #1f2b3a !important;}
+    .card.missing-only-hidden {display: none !important;}
+    .card.missing img {filter: grayscale(100%) brightness(0.3);}
+    body.missing-mode .card.missing img {filter: none;}
+  </style>
+</head>
+<body>
+  <div id="containThis">
+    <div id="leftContain">
+      <h1>Controllers</h1>
+      <div>
+        <select id="viewModeSelector" style="margin-top: 0.5rem;">
+          <option value="all">Show All Items</option>
+          <option value="missing">Show Missing Only</option>
+        </select>
+        <h2 id="missingModeNotice" style="color: red; display: none;">Missing Only Mode</h2>
+      </div>      
+    </div>
+    <div id="rightContain">
+      <div id="groupTotals"></div>
+      <div id="totalPrice" style="margin-top: 1rem; font-weight: bold; text-align: right;"></div>
+    </div>
+  </div>
+  <div id="groupFilter" style="margin-bottom: 1rem 0;"></div>
+  <div class="grid" id="collectionGrid"></div>
+  <div class="modal" id="imageModal">
+    <span class="close" id="closeModal">&times;</span>
+    <img id="modalImage" src="" alt="Controller" />
+    <div class="details">
+      <div><strong>Owned:</strong> <span id="ownedCount">0 / 2</span></div>
+      <div><strong>Model:</strong> <span id="modelInfo"></span></div>
+      <hr style="width: 80%; border: 0; border-top: 1px solid #555;">
+      <div><strong>First:</strong></div>
+      <div><strong>Price:</strong> <span id="price1">N/A</span></div>
+      <div><strong>Date:</strong> <span id="date1">N/A</span></div>
+      <div><strong>Location:</strong> <span id="location1">N/A</span></div>
+      <br />
+      <div><strong>Second:</strong></div>
+      <div><strong>Price:</strong> <span id="price2">N/A</span></div>
+      <div><strong>Date:</strong> <span id="date2">N/A</span></div>
+      <div><strong>Location:</strong> <span id="location2">N/A</span></div>
+    </div>
+  </div>
+
+  <script>
+    const data = [
+    {
+        title: "PS1 Multitap",
+        model: "SCPH-1070 U",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_multi.jpg"
+      },
+      {
+        title: "PSOne Multitap",
+        model: "SCPH-1070",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_multi.jpg"
+      },
+    {
+        title: "PS2 Multitap",
+        model: "SCPH-10090",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_fat_multi.jpg"
+      },
+      {
+        title: "PS2 Slimline Multitap",
+        model: "SCPH-70120",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_slim_multi.jpg"
+      },
+      {
+        title: "Sega Saturn 6 Player Japan",
+        model: "",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/saturn_eu_multi.jpg"
+      },
+      {
+        title: "Sega Saturn 6 Player Japan",
+        model: "",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/saturn_jp_multi.jpg"
+      },     
+      {
+        title: "Sega Saturn Bomberman 6 Player",
+        model: "",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/saturn_sbom_multi.jpg"
+      },     
+      {
+        title: "SNES Bomberman 4 Player",
+        model: "",
+        group: "Multitap",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/snes_multitap.png"
+      },    
+      {
+        title: "N64 Solid Grey (Standard)",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+         {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidgrey.png"
+      }, 
+      {
+        title: "N64 Solid Black",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidblack.png"
+      },   
+      {
+        title: "N64 Solid Blue",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidblue.png"
+      },   
+      {
+        title: "N64 Solid Green",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidblue.png"
+      },     
+      {
+        title: "N64 Solid Red",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidred.png"
+      },        
+      {
+        title: "N64 Solid Yellow",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_solidyellow.png"
+      },   
+      {
+        title: "N64 Smoke Black",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_smokeblack.png"
+      },   
+      {
+        title: "N64 Gold",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_gold.png"
+      },  
+      {
+        title: "N64 Clear Blue/White",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },
+          {
+            price: "",
+            date: "",
+            location: ""
+          }          
+        ],
+        image: "docs/assets/img/controllers/n64_bluewhite.png"
+      },   
+      {
+        title: "N64 Clear Red/White",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_redwhite.png"
+      },   
+      {
+        title: "N64 Funtastic Grape Purple",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_grapepurple.png"
+      },     
+      {
+        title: "N64 Funtastic Extreme Green",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_extremegreen.png"
+      },   
+      {
+        title: "N64 Funtastic Fire Orange",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_fireorange.png"
+      },   
+      {
+        title: "N64 Funtastic Grape Purple",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_grapepurple.png"
+      },   
+      {
+        title: "N64 Funtastic Ice Blue",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_iceblue.png"
+      },   
+      {
+        title: "N64 Funtastic Jungle Green",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_junglegreen.png"
+      },   
+      {
+        title: "N64 Jusco",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_jusco.png"
+      },     
+      {
+        title: "N64 Toys R Us",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_toysrus.png"
+      },    
+      {
+        title: "N64 Hello Mac",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_hellomac.png"
+      },  
+      {
+        title: "N64 Mario Kart",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_mariokart.png"
+      },     
+      {
+        title: "N64 Millenium 2000",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_millennium2000.png"
+      },    
+      {
+        title: "N64 Nintendo Power 100",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_nintendopower.png"
+      },        
+      {
+        title: "N64 Daiei Hawks",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_daieihawks.png"
+      },     
+      {
+        title: "N64 Dong Kong Yellow",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+         {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_donkeykong.png"
+      },    
+      {
+        title: "N64 E3 Golden N",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_e3.png"
+      },      
+      {
+        title: "N64 Comboy Grey",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_comboy.png"
+      },     
+      {
+        title: "N64 Comboy Red",
+        model: "",
+        group: "N64",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/n64_comboyred.png"
+      },                                     
+    {
+        title: "PS1 Standard Grey",
+        model: "SCPH-1080",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1.png"
+      },
+      {
+        title: "PS1 Clear Black",
+        model: "SCPH-1080",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_clearblack.png"
+      },
+      {
+        title: "PS1 Solid Black",
+        model: "SCPH-1080",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_solidblack.png"
+      },
+      {
+        title: "PS1 Red",
+        model: "SCPH-1080",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_red.png"
+      },
+      {
+        title: "PS1 White",
+        model: "SCPH-1080",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_white.png"
+      },    
+      {
+        title: "PS1 Dual Analog (green LED)",
+        model: "SCPH-1180",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_dualanalog.png"
+      },                             
+    {
+        title: "PS1 Dual Shock Grey",
+        model: "SCPH-1200",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_dual.png"
+      },
+      {
+        title: "PSOne Clear",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps12_clear.png"
+      },
+      {
+        title: "PS1 Dual Shock Clear Black",
+        model: "SCPH-1200",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_ds_clearblack.png"
+      },
+      {
+        title: "PS1 Dual Shock Clear Green",
+        model: "SCPH-1200",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_cleargreen.png"
+      },      
+      {
+        title: "PS1 Dual Shock Clear Blue",
+        model: "SCPH-1200",
+        group: "PS1",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_clearblue.png"
+      },
+      {
+        title: "PSOne White",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_white.png"
+      },
+      {
+        title: "PSOne Clear Black",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_clearblack.png"
+      },
+      {
+        title: "PSOne Clear Blue",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_clearblue.png"
+      },
+      {
+        title: "PSOne Clear Green",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_cleargreen.png"
+      },
+      {
+        title: "PSOne Clear Red",
+        model: "SCPH-110",
+        group: "PSOne",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/psone_clearred.png"
+      },
+      {
+        title: "PS1 Development Blue",
+        model: "",
+        group: "PS1 Dev",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_dev_blue.png"
+      },
+      {
+        title: "PS1 Development Dark Blue",
+        model: "",
+        group: "PS1 Dev",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_dev_darkblue.png"
+      },
+      {
+        title: "PS1 Development Yaroze",
+        model: "",
+        group: "PS1 Dev",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_yaroze.png"
+      },
+      {
+        title: "PS1 10 Million Console",
+        model: "",
+        group: "PS1 Special",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_10million.jpg"
+      },
+      {
+        title: "PS1 Mouse",
+        model: "SCPH-1030",
+        group: "PS1 Mouse",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_mouse.jpg"
+      },
+      {
+        title: "PS1 Mouse w/ Longer Cord",
+        model: "SCPH-1090",
+        group: "PS1 Mouse",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps1_mouse.jpg"
+      },
+      {
+        title: "PS2 Black",
+        model: "SCPH-100010",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_black.png"
+      },   
+      {
+        title: "PS2 Crystal",
+        model: "SCPH-10010C",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_crystal.png"
+      },   
+      {
+        title: "PS2 Emerald",
+        model: "SCPH-10010G",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_emerald.png"
+      },   
+      {
+        title: "PS2 Crimson Red",
+        model: "SCPH-10010R",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_crimsonred.png"
+      },   
+      {
+        title: "PS2 Lemon Yellow",
+        model: "SCPH-10010Y",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_lemonyellow.png"
+      },   
+      {
+        title: "PS2 Ocean Blue",
+        model: "SCPH-10010L",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_oceanblue.png"
+      },     
+      {
+        title: "PS2 Zen Black",
+        model: "SCPH-10010BI",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_zenblack.png"
+      },   
+      {
+        title: "PS2 Midnight Blue",
+        model: "SCPH-10010MB",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_midnightblue.png"
+      },   
+      {
+        title: "PS2 Midnight Black",
+        model: "SCPH-10010NB",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_midnightblack.png"
+      },   
+      {
+        title: "PS2 Ceramic White",
+        model: "SCPH-10010CW",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_ceramicwhite.png"
+      },   
+      {
+        title: "PS2 Pearl White",
+        model: "SCPH-10010PW",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_pearlwhite.png"
+      },   
+      {
+        title: "PS2 Satin Silver",
+        model: "SCPH-10010SS",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_satinsilver.png"
+      },     
+      {
+        title: "PS2 Pink Controller",
+        model: "SCPH-77000",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_pink.png"
+      },   
+      {
+        title: "PS2 Gold",
+        model: "SCPH-55000GU",
+        group: "PS2 Dual Shock 2",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_gold.png"
+      },   
+      {
+        title: "PS2 Toys R Us",
+        model: "SCPH-9000TB",
+        group: "PS2 Special",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_toysrus.png"
+      },    
+      {
+        title: "PS2 Grey Smoke",
+        model: "",
+        group: "PS2 Special",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_greysmoke.png"
+      },     
+      {
+        title: "PS2 Clear Purple",
+        model: "",
+        group: "PS2 Special",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_clearpurple.png"
+      },   
+      {
+        title: "PS2 PSX Themed Grey",
+        model: "",
+        group: "PS2 PSX Theme",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_psxgrey.png"
+      },   
+      {
+        title: "PS2 PSX Themed White",
+        model: "",
+        group: "PS2 PSX Theme",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_psxwhite.png"
+      },        
+      {
+        title: "PS2 Sega Black Only",
+        model: "",
+        group: "PS2 Sega",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_segablack.png"
+      },   
+      {
+        title: "PS2 Sega Vampire Dalkstalkers",
+        model: "",
+        group: "PS2 Sega",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_segavampire.png"
+      },   
+      {
+        title: "PS2 Sega Grey w/ Coloured Buttons",
+        model: "",
+        group: "PS2 Sega",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_segagrey.png"
+      },   
+      {
+        title: "PS2 Sega White w/ Coloured Buttons",
+        model: "",
+        group: "PS2 Sega",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_segawhite.png"
+      }, 
+      {
+        title: "PS2 Sega Snow White",
+        model: "",
+        group: "PS2 Sega",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/ps2_segasnowwhite.png"
+      },      
+      {
+        title: "Super Famicom Controller Japan",
+        model: "",
+        group: "SNES",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/superfamicom.jpg"
+      },     
+      {
+        title: "SNES Controller Australia",
+        model: "",
+        group: "SNES",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/snes_pal.png"
+      },     
+      {
+        title: "SNES Controller USA",
+        model: "",
+        group: "SNES",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/snes_usa.png"
+      },     
+      {
+        title: "Super Famicom Mouse",
+        model: "",
+        group: "SNES",
+        countOwned: 0,
+        items: [
+          {
+            price: "",
+            date: "",
+            location: ""
+          },  
+          {
+            price: "",
+            date: "",
+            location: ""
+          }
+        ],
+        image: "docs/assets/img/controllers/snes_mouse.jpg"
+      }              
+    ];
+
+    function populateGroupFilter() {
+        const container = document.getElementById("groupFilter");
+        const groups = Array.from(new Set(data.map(item => item.group || "Other"))).sort();
+        const allGroups = ["All", ...groups];
+
+        allGroups.forEach(group => {
+            const link = document.createElement("a");
+            link.href = "#";
+            link.textContent = group;
+            link.dataset.group = group;
+            link.style.marginRight = "1rem";
+            link.style.color = "#66ccff";
+            link.style.textDecoration = "underline";
+            link.style.cursor = "pointer";
+
+            link.addEventListener("click", (e) => {
+            e.preventDefault();
+            filterByGroup(group);
+            highlightActiveLink(group);
+            });
+
+            container.appendChild(link);
+        });
+        }
+
+        function filterByGroup(group) {
+          document.querySelectorAll(".group-wrapper").forEach(wrapper => {
+            const groupName = wrapper.dataset.group;
+            wrapper.style.display = (group === "All" || groupName === group) ? "" : "none";
+          });
+        }
+
+        function highlightActiveLink(activeGroup) {
+        document.querySelectorAll("#groupFilter a").forEach(link => {
+            if (link.dataset.group === activeGroup) {
+            link.style.fontWeight = "bold";
+            link.style.textDecoration = "none";
+            } else {
+            link.style.fontWeight = "normal";
+            link.style.textDecoration = "underline";
+            }
+        });
+        }
+    const grid = document.getElementById("collectionGrid");
+    const modal = document.getElementById("imageModal");
+    const modalImage = document.getElementById("modalImage");
+    const closeModal = document.getElementById("closeModal");
+
+    document.getElementById("viewModeSelector").addEventListener("change", function () {
+      const isMissingMode = this.value === "missing";
+      document.body.classList.toggle("missing-mode", isMissingMode);
+      document.getElementById("missingModeNotice").style.display = isMissingMode ? "block" : "none";
+
+      document.querySelectorAll(".card").forEach(card => {
+        const isMissing = card.classList.contains("missing");
+        card.classList.toggle("missing-only-hidden", isMissingMode && !isMissing);
+      });
+    });
+
+    function createGrid() {
+      let lastGroup = null;
+      let groupContainer = null;
+
+      data.forEach((item, index) => {
+        const currentGroup = item.group || "Other";
+
+        // New group section
+        if (currentGroup !== lastGroup) {
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("group-wrapper");
+          wrapper.dataset.group = currentGroup;
+
+          const heading = document.createElement("div");
+          heading.textContent = currentGroup;
+          heading.style.borderTop = "1px solid #666";
+          heading.style.margin = "1rem 0 0.5rem";
+          heading.style.paddingTop = "0.5rem";
+          heading.style.fontWeight = "bold";
+          heading.style.fontSize = "1.1rem";
+          heading.style.color = "#66ccff";
+
+          groupContainer = document.createElement("div");
+          groupContainer.classList.add("group-container", "grid");
+
+          wrapper.appendChild(heading);
+          wrapper.appendChild(groupContainer);
+          grid.appendChild(wrapper);
+
+          lastGroup = currentGroup;
+        }
+
+        // Card
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.dataset.index = index;
+        if ((item.countOwned || 0) < 1) {
+          card.classList.add("missing");
+        }
+        const img = document.createElement("img");
+        img.src = item.image || "docs/assets/img/controllers/placeholders/locked.png";
+        img.alt = item.title;
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = item.title;
+
+        card.appendChild(img);
+        card.appendChild(title);
+        groupContainer.appendChild(card);
+
+        card.addEventListener("click", () => openModal(index));
+      });
+
+      populateGroupFilter();
+      highlightActiveLink("All");
+      updateTotals();
+      updateGroupTotals();
+    }
+
+    function updateTotals() {
+      const totalUnique = data.length;
+      const totalNeeded = totalUnique * 2;
+      const owned = data.reduce((sum, d) => sum + (d.countOwned || 0), 0);
+      const uniqueOwned = data.filter(d => d.countOwned > 0).length;
+      const pctOverall = ((owned / totalNeeded) * 100).toFixed(1);
+      const pctUnique = ((uniqueOwned / totalUnique) * 100).toFixed(1);
+      }
+
+      function updateGroupTotals() {
+        const groups = {};
+        let totalCost = 0;
+        let totalOwned = 0;
+        let totalItems = 0;
+        let uniqueOwned = 0;
+
+        data.forEach(d => {
+          const group = d.group || "Other";
+          const ownedCount = d.countOwned || 0;
+          if (!groups[group]) groups[group] = { total: 0, owned: 0, cost: 0 };
+
+          groups[group].total += 2;
+          groups[group].owned += ownedCount;
+
+          totalItems += 2;
+          totalOwned += ownedCount;
+          if (ownedCount > 0) uniqueOwned++;
+
+          (d.items || []).forEach(item => {
+            const priceStr = (item.price || "").replace(/[¥\u00a5,]/g, '').trim();
+            const price = parseFloat(priceStr);
+            if (!isNaN(price)) {
+              groups[group].cost += price;
+              totalCost += price;
+            }
+          });
+        });
+
+        function formatYen(value) {
+          return '¥' + value.toLocaleString('en-US');
+        }
+
+        const container = document.getElementById("groupTotals");
+        container.innerHTML = "";
+
+        const table = document.createElement("table");
+        table.className = "group-totals-table";
+
+        Object.entries(groups).forEach(([group, g]) => {
+          const pct = ((g.owned / g.total) * 100).toFixed(1);
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+            <td>${group}</td>
+            <td>${g.owned} / ${g.total} (${pct}%)</td>
+            <td>${formatYen(g.cost)}</td>
+          `;
+
+          table.appendChild(row);
+        });
+
+        // Divider row
+        const divider = document.createElement("tr");
+        divider.innerHTML = `<td colspan="3"><hr style="border: 0; border-top: 1px solid #888; margin: 0.5rem 0;"></td>`;
+        table.appendChild(divider);
+
+        // Add total row
+        const totalPct = ((totalOwned / totalItems) * 100).toFixed(1);
+        const totalRow = document.createElement("tr");
+        totalRow.style.fontWeight = "bold";
+        totalRow.innerHTML = `<td>Total</td><td>${totalOwned} / ${totalItems} (${totalPct}%)</td><td>${formatYen(totalCost)}</td> `;
+        table.appendChild(totalRow);
+
+        // Spacer row
+        const spacer = document.createElement("tr");
+        spacer.innerHTML = `<td colspan="3" style="height: 1rem;"></td>`;
+        table.appendChild(spacer);
+
+        // Unique row
+        const totalUnique = data.length;
+        const pctUnique = ((uniqueOwned / totalUnique) * 100).toFixed(1);
+        const uniqueRow = document.createElement("tr");
+        uniqueRow.innerHTML = `
+          <td>Unique Owned</td>
+          <td style="text-align: right;">${uniqueOwned} / ${totalUnique} (${pctUnique}%)</td>
+          <td>&nbsp;</td>
+        `;
+        table.appendChild(uniqueRow);
+
+        container.appendChild(table);
+      }
+
+    function openModal(index) {
+      const item = data[index];
+      modalImage.src = item.image || "";
+      document.getElementById("ownedCount").textContent = `${item.countOwned || 0} / 2`;
+      document.getElementById("modelInfo").textContent = item.model;
+
+      const first = item.items?.[0] || {};
+      document.getElementById("price1").textContent = first.price || "N/A";
+      document.getElementById("date1").textContent = first.date || "N/A";
+      document.getElementById("location1").textContent = first.location || "N/A";
+
+      const second = item.items?.[1] || {};
+      document.getElementById("price2").textContent = second.price || "N/A";
+      document.getElementById("date2").textContent = second.date || "N/A";
+      document.getElementById("location2").textContent = second.location || "N/A";
+
+      modal.classList.add("active");
+    }
+
+    closeModal.addEventListener("click", () => modal.classList.remove("active"));
+    window.addEventListener("click", e => {
+      if (e.target === modal) modal.classList.remove("active");
+    });
+
+    createGrid();
+  </script>
+</body>
+</html>

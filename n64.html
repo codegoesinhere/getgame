@@ -1,0 +1,4449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>N64 JP Collection</title>
+  <style>
+    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
+    .controls {margin-bottom: 1rem;}
+    .controls a {margin-right: 1rem; cursor: pointer; text-decoration: underline; color: #80bfff;}
+    .controls a.active { font-weight: bold; color: #ffffff; text-decoration: none; }
+    .optionsArea {margin:1rem;}
+    .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; transition: all 0.3s ease;}
+    .card {text-align: center; cursor: pointer; position: relative;}
+    .card img {width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease, aspect-ratio 0.3s ease;}
+    .portrait img {aspect-ratio: 2 / 3;}
+    .landscape img, .cartridge img {aspect-ratio: 16 / 9;}
+    .card.missing img {filter: grayscale(100%) brightness(0.3);}
+    .card .title {margin-top: 0.3rem; font-size: 0.9rem;}
+    .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; height: 80vh; background: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); overflow: hidden;}
+    .modal.active {visibility: visible; opacity: 1;}
+    .modal-content {display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; width: 100%; align-items: start; justify-content: center;}
+    .modal-left, .modal-right { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;}
+    .modal-left img {max-height: 50vh; max-width: 100%; object-fit: contain; height: auto;}
+    .modal-right img {max-height: 24vh; width: auto; object-fit: contain; margin-bottom: 1rem;}
+    .modal-details-wrapper {display: flex; gap: 2rem; justify-content: center; max-width: 1000px; width: 100%; flex-wrap: wrap;}
+    .modal-details {display: grid; grid-template-columns: auto auto; gap: 0.5rem 1rem; color: #ccc;}
+    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: white; cursor: pointer;}
+    #containThis {display:flex;}
+    #leftContain, #rightContain {width:50%;}
+    table {font-size:0.9em;}
+    body.missing-mode {background-color: #1f2b3a}
+    body.missing-mode .card {opacity: 0.3;}
+    body.missing-mode .card.missing {opacity: 1 !important; filter: none !important;}
+    .card.missing img {filter: grayscale(100%) brightness(0.3);}
+    body.missing-mode .card img {opacity: 0.2; filter: none !important;}
+    body.missing-mode .card.missing img {opacity: 1 !important; filter: none !important;}
+  </style>
+</head>
+<body>
+  <div id="containThis">
+    <div id="leftContain">
+      <h1>Controllers</h1>
+      <div style="margin-top: 1rem;">
+        <label for="viewMode" style="font-weight: bold;">View Mode: </label>
+        <select id="viewMode">
+          <option value="all">Show All</option>
+          <option value="missing">Highlight Missing Only</option>
+        </select>
+        <h2 id="missingModeNotice" style="color: red; display: none;">Missing Mode Active</h2>
+      </div>      
+    </div>
+    <div id="rightContain">
+      <div id="totalsTableWrapper">
+        <table id="totalsTable" style="width:75%; border-collapse: collapse;">
+          <tbody id="totalsTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+      <div class="optionsArea">
+      <a data-view="portrait" class="active">Portrait</a>
+      <a data-view="landscape">Landscape</a>
+      <a data-view="cartridge">Cartridge</a>
+    </div>
+  </div>
+  <div class="grid" id="collectionGrid"></div>
+
+  <div class="modal" id="imageModal">
+    <span class="close" id="closeModal">&times;</span>
+    <div class="modal-content">
+      <div class="modal-left">
+        <img id="modalPortrait" src="" alt="Portrait">
+      </div>
+      <div class="modal-right">
+        <img id="modalLandscape" src="" alt="Landscape">
+        <img id="modalCartridge" src="" alt="Cartridge">
+      </div>
+<div id="modalNavLeft" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 2rem; cursor: pointer; color: white;">&#9664;</div>
+<div id="modalNavRight" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 2rem; cursor: pointer; color: white;">&#9654;</div>
+</div>
+<div class="modal-details-wrapper">
+      <div class="modal-details">
+        <strong>Box - Price Paid:</strong><span id="boxPrice">N/A</span>
+        <strong>Box - Date Bought:</strong><span id="boxDate">N/A</span>
+        <strong>Box - Location:</strong><span id="boxLocation">N/A</span>
+      </div>
+      <div class="modal-details">
+        <strong>Cart - Price Paid:</strong><span id="cartPrice">N/A</span>
+        <strong>Cart - Date Bought:</strong><span id="cartDate">N/A</span>
+        <strong>Cart - Location:</strong><span id="cartLocation">N/A</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const views = ['portrait', 'landscape', 'cartridge'];
+    let currentView = 'portrait';
+
+    const data = [
+    {
+        id: 1,
+        title: '64 de Hakken!! Tamagotchi: Minna de Tamagotchi World',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/64dehakken_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 2,
+        title: '64 Hanafuda: Tenshi no Yakusoku',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/hanafuda_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 3,
+        title: '64 Ōzumō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/oozumou_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 4,
+        title: '64 Ōzumō 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/oozumou_2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 5,
+        title: '64 Trump Collection: Alice no Waku Waku Trump World',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/alice_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 6,
+        title: '1080° Snowboarding',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/1080_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 7,
+        title: 'Aero Fighters Assault (Sonic Wings Assault)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/aero_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 8,
+        title: 'AeroGauge',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/aerogauge_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 9,
+        title: 'AI Shogi 3',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/aishogi_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 10,
+        title: 'Air Boarder 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/airboarder_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 11,
+        title: 'Super Speed Race 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/superspeed_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 12,
+        title: 'Bakuretsu Muteki Bangaiō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bakuretsu_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 13,
+        title: 'Bakushō Jinsei 64: Mezase! Resort Ō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bakusho_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 14,
+        title: 'Banjo-Kazooie',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/banjo_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 15,
+        title: 'Banjo-Tooie',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/banjo2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 16,
+        title: 'Bass Rush: ECOGEAR PowerWorm Championship',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bassrush_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 17,
+        title: 'Beetle Adventure Racing!',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/beetle_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 18,
+        title: 'Big Mountain 2000 (Snow Speeder)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bigmountain_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 19,
+        title: 'Blast Corps',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/blastcorps_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 20,
+        title: 'Baku Bomberman',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bakubomb_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 21,
+        title: 'Baku Bomberman 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bakubomb2_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 22,
+        title: 'Bomberman Hero',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bombhero_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 23,
+        title: 'Bomberman 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/bomberman_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 24,
+        title: 'Buck Bumble',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/buckbumble_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 25,
+        title: 'Puzzle Bobble 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/puzzle_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 26,
+        title: 'Castlevania',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/castle_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 27,
+        title: 'Castlevania: Legacy of Darkness',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/castlelegacy_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 28,
+        title: 'Lets Smash',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/letssmash_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 29,
+        title: 'Chameleon Twist',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/chameleon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 30,
+        title: 'Chameleon Twist 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/chameleon2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 31,
+        title: 'Chopper Attack',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/chopperattack_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 32,
+        title: 'Choro Q 64 2: Hachamecha Grand Prix Race',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/choro_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 33,
+        title: 'Chōkūkan Night: Pro Yakyū King',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/chokukan_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 34,
+        title: 'Chōkūkan Night: Pro Yakyū King 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/chokukan2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 35,
+        title: 'Custom Robo',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/customrobo_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 36,
+        title: 'Custom Robo V2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/customrobo2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 37,
+        title: 'Daikatana',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/daikatana_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 38,
+        title: 'Dance Dance Revolution Disney Dancing Museum',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/dancedance_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 39,
+        title: 'Supēsu Dainamaitsu',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/supesu_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 40,
+        title: 'Densha de Go! 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/densha_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 41,
+        title: 'Derby Stallion 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/derby_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 42,
+        title: 'Dezaemon 3D',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/dezaemon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 43,
+        title: 'Diddy Kong Racing',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/diddykong_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 44,
+        title: 'Donkey Kong 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/donkeykong_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 45,
+        title: 'Doom 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/doom_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 46,
+        title: 'Doraemon: Nobita to Mittsu no Seireiseki',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/doraemon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 47,
+        title: 'Doraemon 2: Nobita to Hikari no Shinden',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/doraemon2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 48,
+        title: 'Doraemon 3: Nobita no Machi SOS!',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/doraemon3_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 49,
+        title: 'Dōbutsu no Mori',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/dobutsu_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 50,
+        title: 'Dual Heroes',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/dualheroes_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 51,
+        title: 'Eiko no Saint Andrews',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/eikono_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 52,
+        title: 'Excitebike 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/excitebike_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 53,
+        title: 'Extreme-G',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/extremeg_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 54,
+        title: 'Extreme-G 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/extremeg2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 55,
+        title: 'F-1 World Grand Prix',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/f1world_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 56,
+        title: 'F-Zero X',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/fzerox_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 57,
+        title: 'Human Grand Prix: The New Generation',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/humangrandprix_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 58,
+        title: 'Famista 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/famista_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 59,
+        title: 'FIFA: Road to World Cup 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/fifaroadtoworldcup_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 60,
+        title: 'Fighters Destiny (Fighting Cup)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/fightersdestiny_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 61,
+        title: 'Fighters Destiny 2 (F Cup Maniax)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/fightersdestiny2_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 62,
+        title: 'Flying Dragon',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/flyingdragon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 63,
+        title: 'Fushigi no Dungeon: Fūrai no Shiren 2: Oni Shūrai! Shiren-jō!',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/fushihinodungeon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 64,
+        title: 'G.A.S.P!! Fighters NEXTream',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/gasp_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 65,
+        title: 'Gauntlet Legends',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/gauntlet_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 66,
+        title: 'Getter Love!!: Chō Renai Party Game Tanjō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/getterlove_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 67,
+        title: 'Goemon Mononoke Sugoroku',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/goemon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 68,
+        title: 'GoldenEye 007',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/goldeneye_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 69,
+        title: 'City Tour GrandPrix: Zen Nihon GT Senshuken',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/citytour_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 70,
+        title: 'Hamster Monogatari 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/hamster_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 71,
+        title: 'Harukanaru Augusta Masters 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/harukanaru_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 72,
+        title: 'Harvest Moon 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/harvestmoon_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 73,
+        title: 'Heiwa Pachinko World 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/heiwa_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 74,
+        title: 'Hexen',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/hexen_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 75,
+        title: 'Hey You, Pikachu!',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/heyyou_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 76,
+        title: 'Hybrid Heaven',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/hybrid_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 77,
+        title: 'Ide Yosuke no Mahjong Juku',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/ideyosuke_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 78,
+        title: 'Iggys Reckin Balls',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/iggys_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 79,
+        title: 'Jikkyō World Soccer 3',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo3_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 80,
+        title: 'Jikkyō World Soccer: World Cup France 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyoworldcup_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+
+      {
+        id: 81,
+        title: 'Jikkyō J-League 1999: Perfect Striker 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyoperfectstriker2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 82,
+        title: 'Ganbare! Nippon! Olympics 2000',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/ganbare_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 83,
+        title: 'Itoi Shigesato no Bass Tsuri No. 1 Kettehan!',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/itoi_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 84,
+        title: 'J-League Dynamite Soccer 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jleaguedynamite_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 85,
+        title: 'J-League Eleven Beat 1997',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jleagueeleven_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 86,
+        title: 'J-League Live 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jleaguelive_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 87,
+        title: 'J-League Tactics Soccer',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jleaguetactics_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 88,
+        title: 'Jango Simulation Mahjong-do 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jango_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 89,
+        title: 'Star Twins (Jet Force Gemini)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/startwins_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 90,
+        title: 'Jikkyō GI Stable',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyogistable_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 91,
+        title: 'Jikkyō Powerful Pro Yakyū 4',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo4_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 92,
+        title: 'Jikkyō Powerful Pro Yakyū 5',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo5_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 93,
+        title: 'Jikkyō Powerful Pro Yakyū 6',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo6_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 94,
+        title: 'Jikkyō Powerful Pro Yakyū 2000',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo2000_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 95,
+        title: 'Jikkyō Powerful Pro Yakyu Basic-ban 2001',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyo2001_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 96,
+        title: 'Jikkyō J-League Perfect Striker',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jikkyoperfectstriker_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 97,
+        title: 'Jinsei Game 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/jinsei_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 98,
+        title: 'Kiratto Kaiketsu! 64 Tanteidan',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/kiratto_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 99,
+        title: 'Kirby 64: The Crystal Shards',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/kirby_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 100,
+        title: 'Knife Edge: Nose Gunner',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/knifeedge_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 101,
+        title: 'Last Legion UX',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/lastlegion_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 102,
+        title: 'The Legend of Zelda: Majoras Mask',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/zeldamajora_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 103,
+        title: 'The Legend of Zelda: Ocarina of Time',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/zeldaocarina_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/zeldaocarina_cartridge.jpg'
+        }
+      },
+      {
+        id: 104,
+        title: 'Lode Runner 3-D',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/loderunner_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 105,
+        title: 'Magical Tetris Challenge',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/magicaltetris_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 106,
+        title: 'Mahjong 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mahjong_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 107,
+        title: 'Mahjong Horoki Classic',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mahjongclassic_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 108,
+        title: 'Mahjong Master',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mahjongmaster_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 109,
+        title: 'Mario Golf',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mariogolf_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 110,
+        title: 'Mario Kart 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mariokart_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                      
+    {
+        id: 111,
+        title: 'Mario no Photopi',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mariophoto_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 112,
+        title: 'Mario Party',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/marioparty_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 113,
+        title: 'Mario Party 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/marioparty2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 114,
+        title: 'Mario Party 3',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/marioparty3_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 115,
+        title: 'Mario Tennis',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mariotennis_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 116,
+        title: 'Mega Man 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/megaman_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 117,
+        title: 'Mickeys Speedway USA',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mickey_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 118,
+        title: 'Mischief Makers',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mischief_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 119,
+        title: 'Morita Shogi 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/morita_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 120,
+        title: 'MRC: Multi-Racing Championship',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mrc_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                                                      
+    {
+        id: 121,
+        title: 'Mystical Ninja Starring Goemon',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/mystical_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 122,
+        title: 'Mystical Ninja 2 Starring Goemon',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {},
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/mystical2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 123,
+        title: 'Nagano Winter Olympics 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '$60',
+          date: '2024-04-02',
+          location: 'Book Off'
+        },
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/nagano_portrait.jpg',
+          landscape: 'docs/assets/img/n64/zelda_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/zelda_cartridge.jpg'
+        }
+      },
+      {
+        id: 124,
+        title: 'NBA In The Zone 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/nba98_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 125,
+        title: 'NBA In The Zone 99',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/nba99_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 126,
+        title: 'Neon Genesis Evangelion',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/neongenesis_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 127,
+        title: 'Nintama Rantarō 64 Game Gallery',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/nintama_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 128,
+        title: 'Nushi Tsuri 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/nushi_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 129,
+        title: 'Nushi Tsuri 64: Shiokaze Ninotte',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/nushi2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 130,
+        title: 'Ogre Battle 64: Person of Lordly Caliber',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/ogre_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 131,
+        title: 'Olympic Hockey 98',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/olympichockey_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 132,
+        title: 'Onegai Monsters',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/onegai_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 133,
+        title: 'Pachinko 365 Nichi',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pachinko_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 134,
+        title: 'Paper Mario',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/papermario_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 135,
+        title: 'Parlor! Pro 64: Pachinko Jikki Simulation',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/parlor_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 136,
+        title: 'PD Ultraman Battle Collection 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pdultra_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 137,
+        title: 'Choro Q 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/choroq_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 138,
+        title: 'Perfect Dark',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/perfectdark_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 139,
+        title: 'Pilotwings 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pilotwings_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 140,
+        title: 'Pocket Monsters Stadium',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pocket_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 141,
+        title: 'Pokémon Snap',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pokemonsnap_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 142,
+        title: 'Pokémon Stadium 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pokemon2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 143,
+        title: 'Pokémon Stadium Gold Silver',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/pokemongold_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 144,
+        title: 'Power League 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/powerleague_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 145,
+        title: 'Pro Mahjong Kiwame 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/promahjong_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 146,
+        title: 'Pro Shinan Mahjong Tsuwamono 64: Jansō Battle ni Chōsen',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/proshinan_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                      
+    {
+        id: 147,
+        title: 'Puyo Puyo Sun 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/puyopuyosun_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 148,
+        title: 'Puyo Puyo~n Party',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/puzzle_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 149,
+        title: 'Quest 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/quest64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 150,
+        title: 'Rakugakids',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/rakugakids_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 151,
+        title: 'Rally 99',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/rally99_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 152,
+        title: 'Resident Evil 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/residentevil_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 153,
+        title: 'Robot Ponkottsu 64: Nanatsu no Umi no Caramel',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/robot_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 154,
+        title: 'Saikyō Habu Shōgi',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/saikyo_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 155,
+        title: 'S.D. Hiryū no Ken Twin',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/sdhiryu_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 156,
+        title: 'Shadowgate 64: Trials of the Four Towers',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/shadowgate_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                                                      
+    {
+        id: 157,
+        title: 'Shin Nippon Pro Wrestling: Toukon Road - Brave Spirits',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/shinbrave_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 158,
+        title: 'Shin Nippon Pro Wrestling: Toukon Road 2- Next Generation',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {},
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/shinnext_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 159,
+        title: 'Sim City 2000',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '$60',
+          date: '2024-04-02',
+          location: 'Book Off'
+        },
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/simcity_portrait.jpg',
+          landscape: 'docs/assets/img/n64/zelda_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/zelda_cartridge.jpg'
+        }
+      },
+      {
+        id: 160,
+        title: 'Snowboard Kids',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/snow_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 161,
+        title: 'Snowboard Kids 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/snow2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 162,
+        title: 'Starfox 64 (Lylat Wars)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/starfox_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 163,
+        title: 'Star Soldier: Vanishing Earth',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/starsoldier_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 164,
+        title: 'Star Wars Episode I: Racer',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/swracer_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 165,
+        title: 'Star Wars: Rogue Squadron',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/swsquadron_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },     
+      {
+        id: 166,
+        title: 'Star Wars: Shadows of the Empire',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/swshadows_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 167,
+        title: 'Super B-Daman: Battle Phoenix 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/superb_portrait.gif',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 168,
+        title: 'Super Bowling',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/superbowling_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 169,
+        title: 'Super Mario 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/supermario64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/supermario64_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/supermario64_cartridge.jpg'
+        }
+      },
+      {
+        id: 170,
+        title: 'Super Mario 64 Revised',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/supermario64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/supermario64_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/supermario64_cartridge.jpg'
+        }
+      },
+      {
+        id: 171,
+        title: 'Super Robot Spirits',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/spirits_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 172,
+        title: 'Super Robot Taisen 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/taisen_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 173,
+        title: 'Super Smash Bros.',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/smash_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 174,
+        title: 'Susume! Taisen Puzzle Dama: Tōkon! Marutama Chō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/susume_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 175,
+        title: 'Tetris 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tetris64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                      
+    {
+        id: 176,
+        title: 'Top Gear Hyper-Bike',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tghyperbike_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 177,
+        title: 'Top Gear Overdrive',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tgoverdrive_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 178,
+        title: 'Top Gear Rally',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tgrally_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 179,
+        title: 'Top Gear Rally 2',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tgrally2_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 180,
+        title: 'Transformers: Beast Wars Transmetals',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/beastwars_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 181,
+        title: 'Tsumi to Batsu: Hoshi no Keishōsha',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/tsumi_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 182,
+        title: 'Turok: Dinosaur Hunter',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/turok_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 183,
+        title: 'Violence Killer: Turok New Generation (Turok 2)',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/turok2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 184,
+        title: 'King Hill 64: Extreme Snowboarding',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/kinghill_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 185,
+        title: 'Ucchan Nanchan no Hono no Challenge: Denryu Ira Ira Bo',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/ucchan_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },                                                      
+    {
+        id: 186,
+        title: 'V-Rally: Edition 99',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/vrally99_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 187,
+        title: 'Virtual Pro Wrestling 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {},
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/vpw_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 188,
+        title: 'Virtual Pro Wrestling 2: Ōdō Keishō',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '$60',
+          date: '2024-04-02',
+          location: 'Book Off'
+        },
+        cartInfo: {},
+        images: {
+          portrait: 'docs/assets/img/n64/vpw2_portrait.jpg',
+          landscape: 'docs/assets/img/n64/zelda_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/zelda_cartridge.jpg'
+        }
+      },
+      {
+        id: 189,
+        title: 'Wave Race 64',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/waverace64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/waverace64_cartridge.jpg'
+        }
+      },
+      {
+        id: 190,
+        title: 'Wave Race 64 Revised',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/waverace64_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/waverace64_cartridge.jpg'
+        }
+      },
+      {
+        id: 191,
+        title: 'Wayne Gretzkys 3D Hockey',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/wayne_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 192,
+        title: 'Wetrix',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/wetrix_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 193,
+        title: 'WinBack: Covert Operations',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/winback_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 194,
+        title: 'Wonder Project J2: Koruro no Mori no Josette',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/wonder_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 195,
+        title: 'WWF WrestleMania 2000',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/wrestlemania_portrait.png',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 196,
+        title: 'Yakochu II: Satsujin Koro',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/yakochu_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 197,
+        title: 'Yoshis Story',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/yoshi_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      },
+      {
+        id: 198,
+        title: 'Zool: Majū Tsukai Densetsu',
+        ownedBox: false,
+        ownedCart: false,
+        boxInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        cartInfo: {
+          price: '',
+          date: '',
+          location: ''
+        },
+        images: {
+          portrait: 'docs/assets/img/n64/zool_portrait.jpg',
+          landscape: 'docs/assets/img/n64/placeholder_landscape.jpg',
+          cartridge: 'docs/assets/img/n64/placeholder_cartridge.jpg'
+        }
+      }
+    ];
+
+    updateTotalsTable(data);
+
+    const grid = document.getElementById('collectionGrid');
+    const modal = document.getElementById('imageModal');
+    const closeModal = document.getElementById('closeModal');
+
+    function createGrid() {
+      data.forEach((game, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.index = index;
+
+        const img = document.createElement('img');
+        img.alt = game.title;
+
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = game.title;
+
+        card.appendChild(img);
+        card.appendChild(title);
+        grid.appendChild(card);
+
+        card.addEventListener('click', () => {
+  openModal(index);
+});
+      });
+
+      updateGrid();
+    }
+
+    function updateGrid() {
+      updateTotals();
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
+        const index = parseInt(card.dataset.index, 10);
+        const game = data[index];
+        const img = card.querySelector('img');
+
+        card.classList.remove('portrait', 'landscape', 'cartridge', 'missing');
+        card.classList.add(currentView);
+        const isOwned = (currentView === 'cartridge') ? game.ownedCart : game.ownedBox;
+        if (!isOwned) card.classList.add('missing');
+
+        img.src = game.images[currentView] || 'images/placeholders/locked.png';
+      });
+
+      document.querySelectorAll('.controls a').forEach(a => {
+        a.classList.toggle('active', a.dataset.view === currentView);
+      });
+    }
+
+    document.querySelectorAll('.controls a').forEach(link => {
+      link.addEventListener('click', () => {
+        currentView = link.dataset.view;
+        updateGrid();
+      });
+    });
+
+    closeModal.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+
+    window.addEventListener('click', e => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+
+    let currentModalIndex = null;
+
+function openModal(index) {
+  const game = data[index];
+  currentModalIndex = index;
+
+  const modalPortrait = document.getElementById('modalPortrait');
+  modalPortrait.src = game.images.portrait;
+  modalPortrait.style.filter = game.ownedBox ? 'none' : 'grayscale(100%) brightness(0.3)';
+  const modalLandscape = document.getElementById('modalLandscape');
+  modalLandscape.src = game.images.landscape;
+  modalLandscape.style.filter = game.ownedBox ? 'none' : 'grayscale(100%) brightness(0.3)';
+  const modalCartridge = document.getElementById('modalCartridge');
+  modalCartridge.src = game.images.cartridge;
+  modalCartridge.style.filter = game.ownedCart ? 'none' : 'grayscale(100%) brightness(0.3)';
+
+  document.getElementById('boxPrice').textContent = game.boxInfo?.price || 'N/A';
+  document.getElementById('boxDate').textContent = game.boxInfo?.date || 'N/A';
+  document.getElementById('boxLocation').textContent = game.boxInfo?.location || 'N/A';
+
+  document.getElementById('cartPrice').textContent = game.cartInfo?.price || 'N/A';
+  document.getElementById('cartDate').textContent = game.cartInfo?.date || 'N/A';
+  document.getElementById('cartLocation').textContent = game.cartInfo?.location || 'N/A';
+
+  modal.classList.add('active');
+}
+
+// Add click handlers to arrows
+const modalNavLeft = document.getElementById('modalNavLeft');
+const modalNavRight = document.getElementById('modalNavRight');
+
+modalNavLeft.addEventListener('click', () => {
+  if (currentModalIndex > 0) {
+    openModal(currentModalIndex - 1);
+  }
+});
+
+modalNavRight.addEventListener('click', () => {
+  if (currentModalIndex < data.length - 1) {
+    openModal(currentModalIndex + 1);
+  }
+});
+
+// Extend keydown for modal navigation
+createGrid();
+
+    document.addEventListener('keydown', (e) => {
+      if (modal.classList.contains('active')) {
+        if (e.key === 'ArrowLeft' && currentModalIndex > 0) {
+          openModal(currentModalIndex - 1);
+          return;
+        }
+        if (e.key === 'ArrowRight' && currentModalIndex < data.length - 1) {
+          openModal(currentModalIndex + 1);
+          return;
+        }
+      }
+    });
+
+    function updateTotals() {
+      const total = data.length;
+      const boxOwned = data.filter(game => game.ownedBox).length;
+      const cartOwned = data.filter(game => game.ownedCart).length;
+
+      const boxPct = ((boxOwned / total) * 100).toFixed(1);
+      const cartPct = ((cartOwned / total) * 100).toFixed(1);
+
+      const overall = boxOwned + cartOwned;
+      const overallTot = total * 2;
+      const overallPct = ((overall / overallTot) * 100).toFixed(1);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (key === '1' || key === 'p') {
+        currentView = 'portrait';
+      } else if (key === '2' || key === 'l') {
+        currentView = 'landscape';
+      } else if (key === '3' || key === 'c') {
+        currentView = 'cartridge';
+      } else {
+        return;
+      }
+      updateGrid();
+    });
+
+    function formatYen(value) {
+      return value.toLocaleString('ja-JP');
+    }
+
+    function updateTotalsTable(data) {
+      function formatYen(value) {
+  return value.toLocaleString('ja-JP');
+}
+
+  function updateTotalsTable(data) {
+    const total = data.length;
+    let boxCount = 0, cartCount = 0;
+    let boxTotal = 0, cartTotal = 0;
+
+    data.forEach(item => {
+      if (item.ownedBox) {
+        boxCount++;
+        const price = parseInt(item.boxInfo.price || '0', 10);
+        if (!isNaN(price)) boxTotal += price;
+      }
+
+      if (item.ownedCart) {
+        cartCount++;
+        const price = parseInt(item.cartInfo.price || '0', 10);
+        if (!isNaN(price)) cartTotal += price;
+      }
+    });
+
+    const tbody = document.getElementById('totalsTableBody');
+    tbody.innerHTML = `
+      <tr>
+        <td>Cartridge</td>
+        <td style="text-align:right;">${cartCount} / ${total} (${((cartCount / total) * 100).toFixed(1)}%)</td>
+        <td style="text-align:right;">¥${formatYen(cartTotal)}</td>
+      </tr>
+      <tr>
+        <td>Boxed</td>
+        <td style="text-align:right;">${boxCount} / ${total} (${((boxCount / total) * 100).toFixed(1)}%)</td>
+        <td style="text-align:right;">¥${formatYen(boxTotal)}</td>
+      </tr>
+      <tr><td colspan="3"><hr style="border: 0; border-top: 1px solid #888; margin: 0.5rem 0;"></td></tr>
+      <tr>
+        <td style="font-weight:bold;">Total</td>
+        <td style="text-align:right; font-weight:bold;">${boxCount + cartCount} / ${total * 2} (${(((boxCount + cartCount) / (total * 2)) * 100).toFixed(1)}%)</td>
+        <td style="text-align:right; font-weight:bold;">¥${formatYen(boxTotal + cartTotal)}</td>
+      </tr>
+    `;
+  }
+
+  updateTotalsTable(data);
+
+  document.getElementById("viewMode").addEventListener("change", function () {
+    const mode = this.value;
+    const body = document.body;
+    const notice = document.getElementById("missingModeNotice");
+
+    if (mode === "missing") {
+      body.classList.add("missing-mode");
+      notice.style.display = "block";
+    } else {
+      body.classList.remove("missing-mode");
+      notice.style.display = "none";
+    }
+  });
+
+    }
+  </script>
+</body>
+</html>

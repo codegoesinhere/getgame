@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VirtualBoy Games</title>
+  <style>
+    #groupTotals {white-space: pre-wrap;}
+    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
+    #groupFilter {margin: 2rem 1rem;}
+    .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
+    .card {text-align: center; cursor: pointer;}
+    .card img {width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease;}
+    .card.missing img, .party img {filter: grayscale(100%) brightness(0.3) !important;}
+    .card.purchased img {filter: none !important;}
+    .card .title {margin-top: 0.3rem; font-size: 0.9rem;}
+    .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-height: 90vh; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; overflow-y: auto;}
+    .modal.active {visibility: visible; opacity: 1;}
+    .modal img {max-height: 40vh; object-fit: contain;}
+    .modal .details {margin-top: 1rem; color: #ccc; text-align: center;}
+    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: white; cursor: pointer;}
+    #totals {font-weight:bold; margin-bottom:1rem;}
+    #containThis {display:flex;}
+    #leftContain, #rightContain {width:50%;}
+    .card.force-visible img {filter: none !important;}
+    .card.force-invisible img {filter: grayscale(100%) brightness(0.3) !important;}
+    .card img { width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease; filter: none; /* fallback base */}
+    .card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}
+</style>
+</head>
+<body>
+    <div id="containThis">
+        <div id="leftContain">
+          <h1>VirtualBoy Items</h1>
+          <div style="margin-top: 0.5rem;">
+            <select id="viewMode" style="padding: 0.3rem; font-size: 1rem;">
+              <option value="all">Show All</option>
+              <option value="missing">Show Missing Only</option>
+            </select>
+            <h2 id="missingModeWarning" style="color: red; display: none;">MISSING MODE ACTIVE</h2>
+          </div>      
+        </div>
+        <div id="rightContain">
+          <div id="totalPrice" style="margin-top: 1rem; font-weight: bold;"></div>
+          <div id="groupTotals"></div>
+          </div>
+      </div>
+      <div id="groupFilter" style="margin-bottom: 1rem 0;"></div>
+      <div class="grid" id="collectionGrid"></div>
+      <div class="modal" id="imageModal">
+        <span class="close" id="closeModal">&times;</span>
+        <img id="modalImage" src="" alt="Controller" />
+        <div class="details">
+          <div><strong>Owned:</strong> <span id="ownedCount">0 / 1</span></div>
+          <hr style="width: 80%; border: 0; border-top: 1px solid #555;">
+          <div><strong>Price:</strong> <span id="price1">N/A</span></div>
+          <div><strong>Date:</strong> <span id="date1">N/A</span></div>
+          <div><strong>Location:</strong> <span id="location1">N/A</span></div>
+          <br />
+        </div>
+      </div>
+
+<script>
+const data = [
+{
+        title: "3D Tetris",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/3dtetris_cartridge.jpg"
+      },
+{
+        title: "Galactic Pinball",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/galacticpinball_cartridge.jpg"
+      },
+{
+        title: "Golf",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/golf_cartridge.jpg"
+      },
+{
+        title: "Innsmouth no Yakata",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/innsmouth_cartridge.jpg"
+      },
+{
+        title: "Jack Bros.",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/jackbros_cartridge.jpg"
+      },
+{
+        title: "Mario Clash",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/marioclash_cartridge.jpg"
+      },
+{
+        title: "Mario's Tennis",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/mariotennis_cartridge.jpg"
+      },
+{
+        title: "Nester's Funky Bowling",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/nester_cartridge.jpg"
+      },
+{
+        title: "Panic Bomber",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/panicbomber_cartridge.jpg"
+      },
+{
+        title: "Red Alarm",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/redalarm_cartridge.jpg"
+      },
+{
+        title: "SD Gundam Dimension War",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/sdgundam_cartridge.jpg"
+      },
+{
+        title: "Space Invaders Virtual Collection",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/spaceinvaders_cartridge.jpg"
+      },
+{
+        title: "Space Squash",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/spacesquash_cartridge.jpg"
+      },
+{
+        title: "Teleroboxer",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/teleroboxer_cartridge.jpg"
+      },
+{
+        title: "V-Tetris",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/vtetris_cartridge.jpg"
+      },
+{
+        title: "Vertical Force",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/verticalforce_cartridge.jpg"
+      },
+{
+        title: "Virtual Bowling",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualbowling_cartridge.jpg"
+      },
+{
+        title: "Virtual Boy Wario Land",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/warioland_cartridge.jpg"
+      },
+{
+        title: "Virtual Fishing",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualfishing_cartridge.jpg"
+      },
+{
+        title: "Virtual Lab",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtuallab_cartridge.jpg"
+      },
+{
+        title: "Virtual League Baseball",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualleague_cartridge.jpg"
+      },
+{
+        title: "Waterworld",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/waterworld_cartridge.jpg"
+      },{
+        title: "3D Tetris",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/3dtetris.jpg"
+      },
+{
+        title: "Galactic Pinball",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/galacticpinball.jpg"
+      },
+{
+        title: "Golf",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/golf.png"
+      },
+{
+        title: "Innsmouth no Yakata",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/innsmouth.png"
+      },
+{
+        title: "Jack Bros.",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/jackbros.png"
+      },
+{
+        title: "Mario Clash",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/marioclash.png"
+      },
+{
+        title: "Mario's Tennis",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/mariotennis.jpg"
+      },
+{
+        title: "Nester's Funky Bowling",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/nester.png"
+      },
+{
+        title: "Panic Bomber",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/panicbomber.png"
+      },
+{
+        title: "Red Alarm",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/redalarm.jpg"
+      },
+{
+        title: "SD Gundam Dimension War",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/sdgundam.png"
+      },
+{
+        title: "Space Invaders Virtual Collection",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/spaceinvaders.jpg"
+      },
+{
+        title: "Space Squash",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/spacesquash.jpg"
+      },
+{
+        title: "Teleroboxer",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/teleroboxer.png"
+      },
+{
+        title: "V-Tetris",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/vtetris.jpg"
+      },
+{
+        title: "Vertical Force",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/verticalforce.jpg"
+      },
+{
+        title: "Virtual Bowling",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualbowling.jpg"
+      },
+{
+        title: "Virtual Boy Wario Land",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/warioland.png"
+      },
+{
+        title: "Virtual Fishing",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualfishing.jpg"
+      },
+{
+        title: "Virtual Lab",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtuallab.jpg"
+      },
+{
+        title: "Virtual League Baseball",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/virtualleague.jpg"
+      },
+{
+        title: "Waterworld",
+        group: "Box",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/virtualboy/waterworld.jpg"
+      }
+];
+
+function createGrid() {
+  const grid = document.getElementById("collectionGrid");
+  grid.innerHTML = "";
+  let lastGroup = null;
+
+  data.forEach((item, index) => {
+    if (lastGroup && lastGroup !== item.group) {
+      const hr = document.createElement("hr");
+      hr.style.gridColumn = "1 / -1";
+      hr.style.border = "0";
+      hr.style.borderTop = "2px dashed #444";
+      hr.style.margin = "2rem 0";
+      grid.appendChild(hr);
+    }
+    lastGroup = item.group;
+
+    const card = document.createElement("div");
+card.classList.add("card");
+card.dataset.index = index;
+
+// Ensure fresh class state
+if (item.purchased) {
+  card.classList.add("purchased");
+} else {
+  card.classList.add("missing");
+}
+
+
+    const img = document.createElement("img");
+    img.src = item.image || "docs/assets/img/virtualboy/placeholders/locked.jpg";
+    img.alt = item.title;
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = item.title;
+
+    card.appendChild(img);
+    card.appendChild(title);
+    grid.appendChild(card);
+
+    card.addEventListener("click", () => openModal(index));
+  });
+  populateGroupFilter();
+  highlightActiveLink("All");
+  updateGroupTotals();
+}
+
+function updateGroupTotals() {
+  const groups = {};
+  let totalCost = 0;
+  let totalOwned = 0;
+  let totalItems = 0;
+
+  data.forEach(d => {
+    const group = d.group || "Other";
+    const owned = d.purchased ? 1 : 0;
+
+    if (!groups[group]) groups[group] = { total: 0, owned: 0, cost: 0 };
+    groups[group].total++;
+    groups[group].owned += owned;
+    totalItems++;
+    totalOwned += owned;
+
+    const priceStr = (d.price || "").replace(/[\u00a5,]/g, '').trim();
+    const price = parseFloat(priceStr);
+    if (!isNaN(price)) {
+      groups[group].cost += price;
+      totalCost += price;
+    }
+  });
+
+  function formatYen(value) {
+    return '\u00a5' + value.toLocaleString('en-US');
+  }
+
+  let table = `<table style="border-collapse: collapse; width: 75%; margin-top: 1rem; font-size:0.9rem;">`;
+  Object.entries(groups).forEach(([group, g]) => {
+    const pct = ((g.owned / g.total) * 100).toFixed(1);
+    table += `
+      <tr>
+        <td>${group}</td>
+        <td style="text-align: right;">${g.owned} / ${g.total} (${pct}%)</td>
+        <td style="text-align: right;">${formatYen(g.cost)}</td>
+      </tr>`;
+  });
+
+  const overallPct = ((totalOwned / totalItems) * 100).toFixed(1);
+  table += `
+    <tr><td colspan="3"><hr style="border: 0; border-top: 1px solid #888; margin: 0.5rem 0;"></td></tr>
+    <tr>
+      <td style="font-weight: bold;">Total</td>
+      <td style="text-align: right; font-weight: bold;">${totalOwned} / ${totalItems} (${overallPct}%)</td>
+      <td style="text-align: right; font-weight: bold;">${formatYen(totalCost)}</td>
+    </tr>`;
+  table += `</table>`;
+
+  document.getElementById("groupTotals").innerHTML = table;
+  document.getElementById("totalPrice").textContent = "";
+}
+
+function populateGroupFilter() {
+  const container = document.getElementById("groupFilter");
+  const groups = Array.from(new Set(data.map(item => item.group || "Other"))).sort();
+  const allGroups = ["All", ...groups];
+
+  allGroups.forEach(group => {
+    const link = document.createElement("a");
+    link.href = "#";
+    link.textContent = group;
+    link.dataset.group = group;
+    link.style.marginRight = "1rem";
+    link.style.color = "#66ccff";
+    link.style.textDecoration = "underline";
+    link.style.cursor = "pointer";
+
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      filterByGroup(group);
+      highlightActiveLink(group);
+    });
+
+    container.appendChild(link);
+  });
+}
+
+function filterByGroup(group) {
+  const cards = document.querySelectorAll(".card");
+  cards.forEach(card => {
+    const index = card.dataset.index;
+    const itemGroup = data[index].group || "Other";
+    card.style.display = (group === "All" || itemGroup === group) ? "" : "none";
+  });
+}
+
+function highlightActiveLink(activeGroup) {
+  document.querySelectorAll("#groupFilter a").forEach(link => {
+    if (link.dataset.group === activeGroup) {
+      link.style.fontWeight = "bold";
+      link.style.textDecoration = "none";
+    } else {
+      link.style.fontWeight = "normal";
+      link.style.textDecoration = "underline";
+    }
+  });
+}
+
+document.getElementById("viewMode").addEventListener("change", function () {
+  const mode = this.value;
+  const warning = document.getElementById("missingModeWarning");
+  const body = document.body;
+
+  document.querySelectorAll(".card").forEach(card => {
+    const index = card.dataset.index;
+    const isPurchased = data[index].purchased === true;
+
+    // 🔥 Re-evaluate .missing status every time
+    if (isPurchased) {
+      card.classList.remove("missing");
+    } else {
+      card.classList.add("missing");
+    }
+
+    card.classList.remove("force-visible");
+
+    if (mode === "missing") {
+      if (!isPurchased) {
+        card.style.display = "";
+        card.classList.add("force-visible");
+      } else {
+        card.style.display = "none";
+      }
+      warning.style.display = "block";
+      body.style.background = "#222a40";
+    } else {
+      card.style.display = "";
+      warning.style.display = "none";
+      body.style.background = "#121212";
+    }
+    
+  });
+
+  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
+  filterByGroup(activeGroup);
+});
+
+function openModal(index) {
+  const item = data[index];
+  document.getElementById("modalImage").src = item.image || "";
+  document.getElementById("ownedCount").textContent = item.purchased ? "1 / 1" : "0 / 1";
+  document.getElementById("price1").textContent = item.price || "N/A";
+  document.getElementById("date1").textContent = item.date || "N/A";
+  document.getElementById("location1").textContent = item.location || "N/A";
+  document.getElementById("imageModal").classList.add("active");
+}
+
+document.getElementById("closeModal").addEventListener("click", () => document.getElementById("imageModal").classList.remove("active"));
+window.addEventListener("click", e => {
+  if (e.target === document.getElementById("imageModal")) {
+    document.getElementById("imageModal").classList.remove("active");
+  }
+});
+
+createGrid();
+
+document.getElementById("viewMode").addEventListener("change", function () {
+  const mode = this.value;
+  const warning = document.getElementById("missingModeWarning");
+  const body = document.body;
+
+  document.querySelectorAll(".card").forEach(card => {
+    const index = card.dataset.index;
+    const isPurchased = data[index].purchased === true;
+
+    card.classList.remove("party", "missing", "purchased", "force-visible");
+
+    if (isPurchased) {
+      card.classList.add("purchased");
+    } else {
+      card.classList.add("missing");
+    }
+
+    if (mode === "missing") {
+      if (!isPurchased) {
+        card.style.display = "";
+        card.classList.add("force-visible");
+      } else {
+        card.style.display = "none";
+        card.classList.add("party"); // ✅ this line applies your desired class
+      }
+      warning.style.display = "block";
+      body.style.background = "#222a40";
+    } else {
+      card.style.display = "";
+      warning.style.display = "none";
+      body.style.background = "#121212";
+    }
+  });
+
+  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
+  filterByGroup(activeGroup);
+});
+
+</script>
+</body>
+</html>
