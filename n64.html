@@ -27,7 +27,7 @@
     .modal-details {display: grid; grid-template-columns: auto auto; gap: 0.5rem 1rem; color: #ccc;}
     .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: orangered; cursor: pointer;}
     #containThis {display:flex;}
-    #leftContain, #rightContain {width:50%;}
+    #leftContain, #rightContain {width:50%; order:0;}
     table {font-size:0.9em;}
     body.missing-mode {background-color: #1f2b3a}
     body.missing-mode .card {opacity: 0.3;}
@@ -35,12 +35,18 @@
     .card.missing img {filter: grayscale(100%) brightness(0.3);}
     body.missing-mode .card img {opacity: 0.2; filter: none !important;}
     body.missing-mode .card.missing img {opacity: 1 !important; filter: none !important;}
+    @media only screen and (max-width: 600px) {
+      #containThis {flex-direction: column;}
+      #leftContain, #rightContain {width:100%;}
+      #rightContain {order:-1;}
+      #leftContain {margin:1rem 0 1rem 0;}
+    }
   </style>
 </head>
 <body>
+  <h1>Nintendo 64 Games</h1>
   <div id="containThis">
-    <div id="leftContain">
-      <h1>Nintendo 64 Games</h1>
+    <div id="leftContain"> 
       <div style="margin-top: 1rem;">
         <label for="viewMode" style="font-weight: bold;">View Mode: </label>
         <select id="viewMode">

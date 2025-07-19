@@ -25,17 +25,23 @@
     .group-totals-table td:nth-child(2), .group-totals-table td:nth-child(3) {text-align: right;}
     #collectionGrid {display: flex; flex-direction: column; gap: 2rem;}
     #containThis {display:flex;}
-    #leftContain, #rightContain {width:50%;}
+    #leftContain, #rightContain {width:50%; order:0;}
     body.missing-mode {background-color: #1f2b3a !important;}
     .card.missing-only-hidden {display: none !important;}
     .card.missing img {filter: grayscale(100%) brightness(0.3);}
     body.missing-mode .card.missing img {filter: none;}
+    @media only screen and (max-width: 600px) {
+      #containThis {flex-direction: column;}
+      #leftContain, #rightContain {width:100%;}
+      #rightContain {order:-1;}
+      #leftContain {margin:1rem 0 1rem 0;}
+    }
   </style>
 </head>
 <body>
+  <h1>Controllers</h1>
   <div id="containThis">
     <div id="leftContain">
-      <h1>Controllers</h1>
       <div>
         <select id="viewModeSelector" style="margin-top: 0.5rem;">
           <option value="all">Show All Items</option>

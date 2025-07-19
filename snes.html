@@ -21,17 +21,24 @@
     .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: orangered; cursor: pointer;}
     #totals {font-weight:bold; margin-bottom:1rem;}
     #containThis {display:flex;}
-    #leftContain, #rightContain {width:50%;}
+    #leftContain, #rightContain {width:50%; order:0;}
     .card.force-visible img {filter: none !important;}
     .card.force-invisible img {filter: grayscale(100%) brightness(0.3) !important;}
     .card img { width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease; filter: none; /* fallback base */}
     .card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}
+    @media only screen and (max-width: 600px) {
+      #containThis {flex-direction: column;}
+      #leftContain, #rightContain {width:100%;}
+      #rightContain {order:-1;}
+      #leftContain {margin:1rem 0 1rem 0;}
+    }
 </style>
 </head>
 <body>
+    <h1>SNES Items</h1>
     <div id="containThis">
         <div id="leftContain">
-          <h1>SNES Items</h1>
+          
           <div style="margin-top: 0.5rem;">
             <select id="viewMode" style="padding: 0.3rem; font-size: 1rem;">
               <option value="all">Show All</option>
