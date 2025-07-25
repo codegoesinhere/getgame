@@ -16,7 +16,7 @@
     .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-height: 90vh; background: rgba(0, 0, 0, 0.85);  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; overflow-y: auto;}
     .modal.active {visibility: visible; opacity: 1;}
     .modal img {max-height: 40vh; object-fit: contain;}
-    .modal .details {margin-top: 1rem; color: #ccc; text-align: center;    }
+    .modal .details {margin-top: 1rem; color: #ccc; text-align: center;}
     .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: orangered;; cursor: pointer;}
     .group-totals-table {width: 30%; border-collapse: collapse; margin-bottom: 1rem; font-size:0.9em;}
     .group-totals-table td:nth-child(2), .group-totals-table td:nth-child(3) {text-align: right;}
@@ -30,6 +30,7 @@
     .card.missing-only-hidden {display: none !important;}
     .card.missing img {filter: grayscale(100%) brightness(0.3);}
     body.missing-mode .card.missing img {filter: none;}
+    .menu a {color:darkgoldenrod; font-size:0.8em;}
     @media only screen and (max-width: 600px) {
       #containThis {flex-direction: column;}
       #leftContain, #rightContain {width:100%;}
@@ -39,6 +40,9 @@
   </style>
 </head>
 <body>
+  <div class="menu">
+    <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a></p>
+  </div>
   <h1>Controllers</h1>
   <div id="containThis">
     <div id="leftContain">
