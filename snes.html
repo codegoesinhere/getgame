@@ -27,7 +27,7 @@
     .modal.active {visibility: visible; opacity: 1;}
     .modal img {max-height: 40vh; object-fit: contain;}
     .modal .details {margin-top: 1rem; color: #ccc; text-align: center;}
-    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: orangered; cursor: pointer;}
+    .modal .close {position: absolute; top: 1rem; right: 1rem; font-size: 2rem; color: orangered; cursor: pointer; background: white; z-index: 1000;}
     #totals {font-weight:bold; margin-bottom:1rem;}
     #containThis {display:flex;}
     #leftContain, #rightContain {width:50%; order:0;}
@@ -86,27 +86,27 @@ const data = [
         title: "Donkey Kong Country",
         group: "Cartridge",
         purchased: true,
-        price: "780",
-        date: "tbc",
-        location: "tbc",
+        price: "710",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/donkeykongcountry_cartridge.jpg"
       },
 {
         title: "Donkey Kong Country 2",
         group: "Cartridge",
         purchased: true,
-        price: "980",
-        date: "tbc",
-        location: "tbc",
+        price: "891",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/donkeykongcountry2_cartridge.jpg"
       },
 {
         title: "Donkey Kong Country 3",
         group: "Cartridge",
         purchased: true,
-        price: "1080",
-        date: "tbc",
-        location: "tbc",
+        price: "982",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/donkeykongcountry3_cartridge.jpg"
       },
 {
@@ -182,6 +182,24 @@ const data = [
         image: "docs/assets/img/snes/mortalkombat2_cartridge.jpg"
       },
 {
+        title: "Mortal Kombat 3",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/mortalkombat3_cartridge.png"
+      },
+{
+        title: "Ultimate Mortal Kombat 3",
+        group: "Cartridge",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/ultimatemortalkombat3_cartridge.png"
+      },            
+{
         title: "NBA Jam",
         group: "Cartridge",
         purchased: true,
@@ -191,21 +209,57 @@ const data = [
         image: "docs/assets/img/snes/nbajam_cartridge.jpg"
       },
 {
+        title: "NBA Jikkyou Basket: Winning Dunk (NBA Give 'n Go)",
+        group: "Cartridge",
+        purchased: true,
+        price: "270",
+        date: '',
+        location: '',
+        image: "docs/assets/img/snes/nbajikkyou_cartridge.png"
+      },
+      {
+        title: "SimCity",
+        group: "Cartridge",
+        purchased: true,
+        price: "710",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
+        image: "docs/assets/img/snes/simcity_cartridge.png"
+      },
+{
+        title: "SimCity 2000",
+        group: "Cartridge",
+        purchased: true,
+        price: "619",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
+        image: "docs/assets/img/snes/simcity2000_cartridge.png"
+      },      
+      {
+        title: "Starfox",
+        group: "Cartridge",
+        purchased: true,
+        price: "1255",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
+        image: "docs/assets/img/snes/starfox_cartridge.png"
+      },
+      {
         title: "Street Fighter II",
         group: "Cartridge",
         purchased: true,
-        price: "780",
-        date: "tbc",
-        location: "tbc",
+        price: "710",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/streetfighter2_cartridge.jpg"
       },
 {
         title: "Street Fighter II Turbo",
         group: "Cartridge",
         purchased: true,
-        price: "780",
-        date: "tbc",
-        location: "tbc",
+        price: "710",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/streetfighter2turbo_cartridge.jpg"
       },
 {
@@ -221,9 +275,9 @@ const data = [
         title: "Super Street Fighter II",
         group: "Cartridge",
         purchased: true,
-        price: "1280",
-        date: "tbc",
-        location: "tbc",
+        price: "1164",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/superstreetfighter2_cartridge.jpg"
       },
 {
@@ -239,9 +293,9 @@ const data = [
         title: "Super Mario Kart",
         group: "Cartridge",
         purchased: true,
-        price: "980",
-        date: "tbc",
-        location: "tbc",
+        price: "891",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/supermariokart_cartridge.jpg"
       },
 {
@@ -257,18 +311,18 @@ const data = [
         title: "Super Mario World",
         group: "Cartridge",
         purchased: true,
-        price: "1480",
-        date: "tbc",
-        location: "tbc",
+        price: "1346",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/supermarioworld_cartridge.jpg"
       },
 {
         title: "Super Mario World 2",
         group: "Cartridge",
         purchased: true,
-        price: "480",
-        date: "tbc",
-        location: "tbc",
+        price: "982",
+        date: '2025-11-11',
+        location: 'Retro Game Camp, Chiyoda',
         image: "docs/assets/img/snes/supermarioworld2_cartridge.jpg"
       },
 {
