@@ -44,6 +44,10 @@
     .card.missing img {filter: grayscale(100%) brightness(0.3);}
     body.missing-mode .card img {opacity: 0.2; filter: none !important;}
     body.missing-mode .card.missing img {opacity: 1 !important; filter: none !important;}
+    /* Show only purchased (hide missing) */
+    body.owned-only .card.missing {display: none;}
+    /* Show only missing (hide purchased) */
+    body.missing-only .card:not(.missing) {display: none;}
     .menu a {color:darkgoldenrod; font-size:0.8em;}
     @media only screen and (max-width: 600px) {
       #containThis {flex-direction: column;}
@@ -65,6 +69,8 @@
         <select id="viewMode">
           <option value="all">Show All</option>
           <option value="missing">Highlight Missing Only</option>
+          <option value="owned-only">Show Purchased Only</option>
+          <option value="missing-only">Show Missing Only</option>
         </select>
         <h2 id="missingModeNotice" style="color: red; display: none;">Missing Mode Active</h2>
       </div>      
@@ -4489,12 +4495,22 @@ createGrid();
     const body = document.body;
     const notice = document.getElementById("missingModeNotice");
 
-    if (mode === "missing") {
-      body.classList.add("missing-mode");
-      notice.style.display = "block";
+    // Reset all mode classes
+    body.classList.remove("missing-mode", "owned-only", "missing-only");
+
+    // Highlight / background / warning message behaviour
+    if (mode === "missing" || mode === "missing-only") {
+      body.classList.add("missing-mode");    // background colour + dim owned, highlight missing
+      notice.style.display = "block";        // show warning banner
     } else {
-      body.classList.remove("missing-mode");
       notice.style.display = "none";
+    }
+
+    // Filtering behaviour
+    if (mode === "owned-only") {
+      body.classList.add("owned-only");      // hide missing
+    } else if (mode === "missing-only") {
+      body.classList.add("missing-only");    // hide owned
     }
   });
 
