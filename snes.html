@@ -20,7 +20,7 @@
     .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
     .card {text-align: center; cursor: pointer;}
     .card img {width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease;}
-    .card.missing img, .party img {filter: grayscale(100%) brightness(0.3) !important;}
+    .card.missing img /*, .party img*/ {filter: grayscale(100%) brightness(0.3) !important;}
     .card.purchased img {filter: none !important;}
     .card .title {margin-top: 0.3rem; font-size: 0.9rem;}
     .modal {position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-height: 90vh; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s ease; padding: 1rem; overflow-y: auto;}
@@ -34,7 +34,7 @@
     .card.force-visible img {filter: none !important;}
     .card.force-invisible img {filter: grayscale(100%) brightness(0.3) !important;}
     .card img { width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease; filter: none; /* fallback base */}
-    .card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}
+    /*.card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}*/
     .menu a {color:darkgoldenrod; font-size:0.8em;}
     @media only screen and (max-width: 600px) {
       #containThis {flex-direction: column;}
@@ -55,7 +55,9 @@
           <div style="margin-top: 0.5rem;">
             <select id="viewMode" style="padding: 0.3rem; font-size: 1rem;">
               <option value="all">Show All</option>
-              <option value="missing">Show Missing Only</option>
+              <option value="missing-highlight">Highlight Missing Only</option>
+              <option value="purchased-only">Show Purchased Only</option>
+              <option value="missing-only">Show Missing Only</option>
             </select>
             <h2 id="missingModeWarning" style="color: red; display: none;">MISSING MODE ACTIVE</h2>
           </div>      
@@ -213,8 +215,8 @@ const data = [
         group: "Cartridge",
         purchased: true,
         price: "270",
-        date: '',
-        location: '',
+        date: '2025-11-18',
+        location: 'BOOKOFF Narahokkeji Store BOOKOFF 奈良法華寺店',
         image: "docs/assets/img/snes/nbajikkyou_cartridge.png"
       },
       {
@@ -452,6 +454,24 @@ const data = [
         image: "docs/assets/img/snes/mortalkombat2.jpg"
       },
 {
+        title: "Mortal Kombat 3",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/placeholder.png"
+      },
+{
+        title: "Ultimate Mortal Kombat 3",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: "",
+        location: "",
+        image: "docs/assets/img/snes/placeholder.png"
+      },        
+{
         title: "NBA Jam",
         group: "Boxed",
         purchased: false,
@@ -460,6 +480,42 @@ const data = [
         location: "",
         image: "docs/assets/img/snes/nbajam.jpg"
       },
+{
+        title: "NBA Jikkyou Basket: Winning Dunk (NBA Give 'n Go)",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: '',
+        location: '',
+        image: "docs/assets/img/snes/nbajikkyou.jpg"
+      },
+      {
+        title: "SimCity",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: '',
+        location: '',
+        image: "docs/assets/img/snes/simcity.jpg"
+      },
+{
+        title: "SimCity 2000",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: '',
+        location: '',
+        image: "docs/assets/img/snes/simcity2000.png"
+      },      
+      {
+        title: "Starfox",
+        group: "Boxed",
+        purchased: false,
+        price: "",
+        date: '',
+        location: '',
+        image: "docs/assets/img/snes/starfox.png"
+      },      
 {
         title: "Street Fighter II",
         group: "Boxed",
@@ -697,10 +753,24 @@ function populateGroupFilter() {
 
 function filterByGroup(group) {
   const cards = document.querySelectorAll(".card");
+  const mode = document.getElementById("viewMode").value;
+
   cards.forEach(card => {
     const index = card.dataset.index;
     const itemGroup = data[index].group || "Other";
-    card.style.display = (group === "All" || itemGroup === group) ? "" : "none";
+    const isPurchased = data[index].purchased === true;
+
+    // Base: group filter
+    let visible = (group === "All" || itemGroup === group);
+
+    // Apply viewMode on top
+    if (mode === "purchased-only") {
+      visible = visible && isPurchased;
+    } else if (mode === "missing-only") {
+      visible = visible && !isPurchased;
+    }
+
+    card.style.display = visible ? "" : "none";
   });
 }
 
@@ -715,45 +785,6 @@ function highlightActiveLink(activeGroup) {
     }
   });
 }
-
-document.getElementById("viewMode").addEventListener("change", function () {
-  const mode = this.value;
-  const warning = document.getElementById("missingModeWarning");
-  const body = document.body;
-
-  document.querySelectorAll(".card").forEach(card => {
-    const index = card.dataset.index;
-    const isPurchased = data[index].purchased === true;
-
-    // 🔥 Re-evaluate .missing status every time
-    if (isPurchased) {
-      card.classList.remove("missing");
-    } else {
-      card.classList.add("missing");
-    }
-
-    card.classList.remove("force-visible");
-
-    if (mode === "missing") {
-      if (!isPurchased) {
-        card.style.display = "";
-        card.classList.add("force-visible");
-      } else {
-        card.style.display = "none";
-      }
-      warning.style.display = "block";
-      body.style.background = "#222a40";
-    } else {
-      card.style.display = "";
-      warning.style.display = "none";
-      body.style.background = "#121212";
-    }
-    
-  });
-
-  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
-  filterByGroup(activeGroup);
-});
 
 function openModal(index) {
   const item = data[index];
@@ -774,16 +805,26 @@ window.addEventListener("click", e => {
 
 createGrid();
 
-document.getElementById("viewMode").addEventListener("change", function () {
-  const mode = this.value;
+const viewModeSelect = document.getElementById("viewMode");
+
+function applyViewMode() {
+  const mode = viewModeSelect.value;
   const warning = document.getElementById("missingModeWarning");
   const body = document.body;
 
+  document.querySelectorAll(".card").forEach(card => card.classList.remove("party"));
+  const isMissingMode = (mode === "missing-highlight" || mode === "missing-only");
+
+  // MISSING MODE ACTIVE + background for *both* missing modes
+  warning.style.display = isMissingMode ? "block" : "none";
+  body.style.background = isMissingMode ? "#222a40" : "#121212";
+
+  // Reset and apply highlight classes
   document.querySelectorAll(".card").forEach(card => {
     const index = card.dataset.index;
     const isPurchased = data[index].purchased === true;
 
-    card.classList.remove("party", "missing", "purchased", "force-visible");
+    card.classList.remove("party", "force-visible", "force-invisible", "purchased", "missing");
 
     if (isPurchased) {
       card.classList.add("purchased");
@@ -791,26 +832,43 @@ document.getElementById("viewMode").addEventListener("change", function () {
       card.classList.add("missing");
     }
 
-    if (mode === "missing") {
-      if (!isPurchased) {
-        card.style.display = "";
-        card.classList.add("force-visible");
-      } else {
-        card.style.display = "none";
-        card.classList.add("party"); // ✅ this line applies your desired class
-      }
-      warning.style.display = "block";
-      body.style.background = "#222a40";
-    } else {
-      card.style.display = "";
-      warning.style.display = "none";
-      body.style.background = "#121212";
+    // For both "highlight missing" and "show missing only", visually mark missing items
+    // Highlight Missing Only (invert colours)
+    if (mode === "missing-highlight") {
+        if (isPurchased) {
+            // purchased → grey (inverse of normal)
+            card.classList.remove("force-visible");
+            card.classList.add("force-invisible");
+        } else {
+            // missing → colour (inverse of normal)
+            card.classList.remove("force-invisible");
+            card.classList.add("force-visible");
+        }
     }
+
+    // Show Purchased Only
+    if (mode === "purchased-only") {
+      card.style.display = isPurchased ? "" : "none";
+    }
+
+    // Show Missing Only
+    if (mode === "missing-only") {
+      card.style.display = isPurchased ? "none" : "";
+      if (!isPurchased) {
+        card.classList.add("force-visible"); // colour highlight for missing items
+      }
+    }
+
   });
 
-  const activeGroup = document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
+  // Re-apply the current group filter with the new mode
+  const activeGroup =
+    document.querySelector("#groupFilter a[style*='font-weight: bold']")?.dataset.group || "All";
   filterByGroup(activeGroup);
-});
+}
+
+// Hook listener
+viewModeSelect.addEventListener("change", applyViewMode);
 
 </script>
 </body>
