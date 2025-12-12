@@ -13,8 +13,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>N64 JP Collection</title>
+  <link rel="stylesheet" href="docs/assets/css/style.css"> 
   <style>
-    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
     .controls {margin-bottom: 1rem;}
     .controls a {margin-right: 1rem; cursor: pointer; text-decoration: underline; color: #80bfff;}
     .controls a.active { font-weight: bold; color: #ffffff; text-decoration: none; }
@@ -48,19 +48,15 @@
     body.owned-only .card.missing {display: none;}
     /* Show only missing (hide purchased) */
     body.missing-only .card:not(.missing) {display: none;}
-    .menu a {color:darkgoldenrod; font-size:0.8em;}
-    @media only screen and (max-width: 600px) {
-      #containThis {flex-direction: column;}
-      #leftContain, #rightContain {width:100%;}
-      #rightContain {order:-1;}
-      #leftContain {margin:1rem 0 1rem 0;}
-    }
   </style>
 </head>
 <body>
+  <header>
   <div class="menu">
-    <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a></p>
+    <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a> <a href="#top">^ Top of page</a></a></p>
   </div>
+  </header>
+  <main>
   <h1>Nintendo 64 Games</h1>
   <div id="containThis">
     <div id="leftContain"> 
@@ -119,7 +115,7 @@
       </div>
     </div>
   </div>
-
+</main>
   <script>
     const views = ['portrait', 'landscape', 'cartridge'];
     let currentView = 'cartridge';

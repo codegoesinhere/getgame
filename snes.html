@@ -13,9 +13,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SNES / Famicom Games</title>
+  <link rel="stylesheet" href="docs/assets/css/style.css"> 
   <style>
     #groupTotals {white-space: pre-wrap;}
-    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
     #groupFilter {margin: 2rem 1rem;}
     .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
     .card {text-align: center; cursor: pointer;}
@@ -35,19 +35,15 @@
     .card.force-invisible img {filter: grayscale(100%) brightness(0.3) !important;}
     .card img { width: 100%; object-fit: cover; border-radius: 0.5rem; border: 2px solid #333; transition: filter 0.3s ease; filter: none; /* fallback base */}
     /*.card.purchased.party img {outline: 0px solid orange !important; filter: grayscale(100%) brightness(0.3) !important;}*/
-    .menu a {color:darkgoldenrod; font-size:0.8em;}
-    @media only screen and (max-width: 600px) {
-      #containThis {flex-direction: column;}
-      #leftContain, #rightContain {width:100%;}
-      #rightContain {order:-1;}
-      #leftContain {margin:1rem 0 1rem 0;}
-    }
 </style>
 </head>
 <body>
+  <header>
     <div class="menu">
-      <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a></p>
+      <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a> <a href="#top">^ Top of page</a></a></p>
     </div>
+  </header>    
+  <main>
     <h1>SNES Items</h1>
     <div id="containThis">
         <div id="leftContain">
@@ -81,7 +77,7 @@
           <br />
         </div>
       </div>
-
+  </main>
 <script>
 const data = [
 {

@@ -13,9 +13,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Controller Collection</title>
+  <link rel="stylesheet" href="docs/assets/css/style.css"> 
   <style>
     #groupTotals {white-space: pre-wrap;}
-    body {font-family: sans-serif; background: #121212; color: #eee; margin: 0; padding: 1rem;}
     #groupFilter {margin: 1rem;}
     .grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem;}
     .card {text-align: center; cursor: pointer;}
@@ -39,56 +39,52 @@
     .card.missing-only-hidden {display: none !important;}
     .card.missing img {filter: grayscale(100%) brightness(0.3);}
     body.missing-mode .card.missing img {filter: none;}
-    .menu a {color:darkgoldenrod; font-size:0.8em;}
-    @media only screen and (max-width: 600px) {
-      #containThis {flex-direction: column;}
-      #leftContain, #rightContain {width:100%;}
-      #rightContain {order:-1;}
-      #leftContain {margin:1rem 0 1rem 0;}
-    }
   </style>
 </head>
 <body>
-  <div class="menu">
-    <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a></p>
-  </div>
-  <h1>Controllers</h1>
-  <div id="containThis">
-    <div id="leftContain">
-      <div>
-        <select id="viewModeSelector" style="margin-top: 0.5rem;">
-          <option value="all">Show All Items</option>
-          <option value="missing">Show Missing Only</option>
-        </select>
-        <h2 id="missingModeNotice" style="color: red; display: none;">Missing Only Mode</h2>
-      </div>      
+  <header>
+    <div class="menu">
+      <p><a href="index.html">Home</a> <a href="controllers.html">Controllers</a> <a href="n64.html">Nintendo 64</a> <a href="snes.html">SNES / Famicom</a> <a href="virtualboy.html">VirtualBoy</a> <a href="#top">^ Top of page</a></a></p>
     </div>
-    <div id="rightContain">
-      <div id="groupTotals"></div>
-      <div id="totalPrice" style="margin-top: 1rem; font-weight: bold; text-align: right;"></div>
+  </header>
+  <main>
+    <h1>Controllers</h1>
+    <div id="containThis">
+      <div id="leftContain">
+        <div>
+          <select id="viewModeSelector" style="margin-top: 0.5rem;">
+            <option value="all">Show All Items</option>
+            <option value="missing">Show Missing Only</option>
+          </select>
+          <h2 id="missingModeNotice" style="color: red; display: none;">Missing Only Mode</h2>
+        </div>      
+      </div>
+      <div id="rightContain">
+        <div id="groupTotals"></div>
+        <div id="totalPrice" style="margin-top: 1rem; font-weight: bold; text-align: right;"></div>
+      </div>
     </div>
-  </div>
-  <div id="groupFilter" style="margin-bottom: 1rem 0;"></div>
-  <div class="grid" id="collectionGrid"></div>
-  <div class="modal" id="imageModal">
-    <span class="close" id="closeModal">&times;</span>
-    <img id="modalImage" src="" alt="Controller" />
-    <div class="details">
-      <div><strong>Owned:</strong> <span id="ownedCount">0 / 2</span></div>
-      <div><strong>Model:</strong> <span id="modelInfo"></span></div>
-      <hr style="width: 80%; border: 0; border-top: 1px solid #555;">
-      <div><strong>First:</strong></div>
-      <div><strong>Price:</strong> <span id="price1">N/A</span></div>
-      <div><strong>Date:</strong> <span id="date1">N/A</span></div>
-      <div><strong>Location:</strong> <span id="location1">N/A</span></div>
-      <br />
-      <div><strong>Second:</strong></div>
-      <div><strong>Price:</strong> <span id="price2">N/A</span></div>
-      <div><strong>Date:</strong> <span id="date2">N/A</span></div>
-      <div><strong>Location:</strong> <span id="location2">N/A</span></div>
+    <div id="groupFilter" style="margin-bottom: 1rem 0;"></div>
+    <div class="grid" id="collectionGrid"></div>
+    <div class="modal" id="imageModal">
+      <span class="close" id="closeModal">&times;</span>
+      <img id="modalImage" src="" alt="Controller" />
+      <div class="details">
+        <div><strong>Owned:</strong> <span id="ownedCount">0 / 2</span></div>
+        <div><strong>Model:</strong> <span id="modelInfo"></span></div>
+        <hr style="width: 80%; border: 0; border-top: 1px solid #555;">
+        <div><strong>First:</strong></div>
+        <div><strong>Price:</strong> <span id="price1">N/A</span></div>
+        <div><strong>Date:</strong> <span id="date1">N/A</span></div>
+        <div><strong>Location:</strong> <span id="location1">N/A</span></div>
+        <br />
+        <div><strong>Second:</strong></div>
+        <div><strong>Price:</strong> <span id="price2">N/A</span></div>
+        <div><strong>Date:</strong> <span id="date2">N/A</span></div>
+        <div><strong>Location:</strong> <span id="location2">N/A</span></div>
+      </div>
     </div>
-  </div>
-
+  </main>
   <script>
     const data = [
     {
